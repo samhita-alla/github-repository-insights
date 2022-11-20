@@ -1,27 +1,28 @@
-import os
-from tkinter import EXCEPTION
-from typing import Optional
-from unicodedata import name
-
-
-from urllib.parse import urljoin
-import requests
-import re
 import datetime
+import os
+import re
+from collections import OrderedDict
+from typing import Optional
+from urllib.parse import urljoin
+
+import logging
+
+import nltk
 import numpy as np
-from urllib3.util.retry import Retry
+import requests
+from celery import Celery, current_task
+from celery.signals import worker_process_init
 from requests.adapters import HTTPAdapter
 from requests.exceptions import (
-    ReadTimeout,
+    ConnectionError,
     ConnectTimeout,
     HTTPError,
-    Timeout,
-    ConnectionError,
+    ReadTimeout,
     RetryError,
+    Timeout,
 )
-
-from celery import Celery, current_task
-from collections import OrderedDict
+import json
+from urllib3.util.retry import Retry
 
 LOOP = 3
 request_error_codes = (
@@ -41,6 +42,31 @@ celery.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:
 celery.conf.result_backend = os.environ.get(
     "CELERY_RESULT_BACKEND", "redis://localhost:6379"
 )
+celery.conf.worker_proc_alive_timeout = 10
+
+
+def dialogue_act_features(post):
+    features = {}
+    for word in nltk.word_tokenize(post):
+        features["contains({})".format(word.lower())] = True
+    return features
+
+
+classifier = None
+
+
+@worker_process_init.connect()
+def setup(**kwargs):
+    nltk.download("nps_chat")
+    posts = nltk.corpus.nps_chat.xml_posts()[:10000]
+
+    featuresets = [
+        (dialogue_act_features(post.text), post.get("class")) for post in posts
+    ]
+    size = int(len(featuresets) * 0.1)
+    train_set, _ = featuresets[size:], featuresets[:size]
+    global classifier
+    classifier = nltk.NaiveBayesClassifier.train(train_set)
 
 
 def find_nearest(array, value):
@@ -53,7 +79,7 @@ def find_nearest(array, value):
     return idx
 
 
-# @celery.task(name="stargrowth")
+@celery.task(name="stargrowth")
 def stargrowth(
     github_api: str,
     access_token: Optional[str] = None,
@@ -241,6 +267,8 @@ def stargrowth(
         result = binary_search(array, 1, len(array), previous_datetime)
 
         if result == -1:
+            number_of_stars = 0
+
             # if the "result" was positive earlier, i.e., if previous_date lies within the stars' date range,
             # we need not fetch the total number of stars because remaining_stars_in_page would be populated already.
             if not visited_flag and previous_datetime < datetime.datetime.strptime(
@@ -249,11 +277,11 @@ def stargrowth(
                 # If the previous date is before the first page's start date, then we need to fetch the total number of stars
                 # For example: if the first page's start date is 2021-11-14T00:00:00Z, and our previous date is 2021-11-21T00:00:00Z,
                 # then we need not fetch the star count because 2021-11-21T00:00:00Z isn't within the overall date range.
-                remaining_stars_in_page = (pages - 1) * 100 + last_page_star_count()
+                number_of_stars = (pages - 1) * 100 + last_page_star_count()
+            elif visited_flag:
+                number_of_stars = remaining_stars_in_page + ((len(array) - 1) * 100)
 
-            year = populate_result(
-                now, remaining_stars_in_page + ((len(array) - 1) * 100), year
-            )
+            year = populate_result(now, number_of_stars, year)
             continue
         elif isinstance(result, int):
             stars_last_page = 0
@@ -354,15 +382,16 @@ def stargrowth(
         pages = result
         array = list(range(1, pages + 1))
 
-    return OrderedDict(reversed(list(result_stars_dict.items())))
+    return {"graph_data": OrderedDict(reversed(list(result_stars_dict.items())))}
 
 
-# @celery.task(name="openissuegrowth")
-def open_issue_growth(
+@celery.task(name="openissuegrowth")
+def openissuegrowth(
     github_api: str,
     access_token: Optional[str] = None,
     timedelta: int = 7,
     timedelta_frequency: int = 2,
+    issue_stats: bool = False,
 ):
     """
     NOTE: Every PR is an issue.
@@ -391,13 +420,79 @@ def open_issue_growth(
     assert_status_hook = lambda response, *args, **kwargs: response.raise_for_status()
     session.hooks["response"] = [assert_status_hook]
 
-    # issue growth per month
     issues_url = urljoin(api_prefix, "issues?per_page=100")
 
     try:
         response = session.get(issues_url, headers=headers)
     except request_error_codes:
         return EXCEPTION_MESSAGE
+
+    issue_map = None
+    no_of_issues = 0
+    if issue_stats:
+        no_of_issues = 50
+        issue_map = {"addressed": [], "unaddressed": []}
+        issues = response.json()
+        for issue_index, each_issue in enumerate(issues[:no_of_issues]):
+            if "pull_request" not in each_issue and each_issue["state"] == "open":
+                issue_open_state = "unaddressed"
+                timeline_url = each_issue["timeline_url"]
+                try:
+                    timeline = session.get(
+                        urljoin(timeline_url, "?per_page=100"),
+                        headers=headers,
+                    )
+                except request_error_codes:
+                    return EXCEPTION_MESSAGE
+
+                pattern = re.compile("(.*)page=(.*)$")
+                pages = 1 if timeline.json() else 0
+                if "last" in timeline.links.keys():
+                    match = pattern.match(timeline.links["last"]["url"])
+                    pages = int(match.group(2))
+
+                try:
+                    timeline_last_page = session.get(
+                        urljoin(timeline_url, f"?per_page=100&page={pages}"),
+                        headers=headers,
+                    ).json()
+                except request_error_codes:
+                    return EXCEPTION_MESSAGE
+
+                last_timeline_event = timeline_last_page[-1]
+                if (
+                    last_timeline_event
+                    and last_timeline_event["event"] == "cross-referenced"
+                    and last_timeline_event["source"]["issue"]["state"] == "closed"
+                ):
+                    issue_open_state = "addressed"
+                elif each_issue["comments"] > 0:
+                    comments_url = each_issue["comments_url"]
+                    try:
+                        comments_list = session.get(
+                            comments_url,
+                            headers=headers,
+                        ).json()
+                    except request_error_codes:
+                        return EXCEPTION_MESSAGE
+                    if classifier.classify(
+                        dialogue_act_features(comments_list[-1]["body"])
+                    ) in ["whQuestion", "ynQuestion"]:
+                        issue_open_state = "unaddressed"
+                    else:
+                        issue_open_state = "addressed"
+
+                issue_map[issue_open_state].append(
+                    {
+                        "url": each_issue["html_url"],
+                        "title": each_issue["title"],
+                    }
+                )
+
+            current_task.update_state(
+                state="PROGRESS",
+                meta={"current": issue_index + 1, "total": timedelta_frequency + 50},
+            )
 
     # get the number of pages if every page has 100 issues
     pages = 1 if response.json() else 0
@@ -412,7 +507,7 @@ def open_issue_growth(
 
         This function binary searches the array [1, ..., pages] and returns the page that contains the key, i.e., the previous date to determine the number of stargazers between the previous date and the current date.
 
-        NOTE: The issues API specifies starred_at dates in descending order.
+        NOTE: The issues API specifies created_at dates in descending order.
 
         ALGORITHM
 
@@ -537,6 +632,7 @@ def open_issue_growth(
 
         if result == -1:
             last_page_response = None
+            number_of_stars = 0
 
             # fetch last page
             if array:
@@ -558,16 +654,16 @@ def open_issue_growth(
                 if previous_datetime < datetime.datetime.strptime(
                     last_page_response[-1]["created_at"], "%Y-%m-%dT%H:%M:%SZ"
                 ):
-                    remaining_issues_in_page = (pages - 1) * 100 + len(
-                        last_page_response
-                    )
+                    number_of_stars = (pages - 1) * 100 + len(last_page_response)
+            elif visited_flag:
+                number_of_stars = remaining_issues_in_page
+                +((len(array) - 2) * 100 if len(array) > 2 else 0)
+                +(len(last_page_response) if len(array) >= 2 else 0)
 
             # if the previous date isn't present in the list of dates
             year = populate_result(
                 now,
-                remaining_issues_in_page
-                + ((len(array) - 2) * 100 if len(array) > 2 else 0)
-                + (len(last_page_response) if len(array) >= 2 else 0),
+                number_of_stars,
                 year,
             )
             continue
@@ -604,7 +700,7 @@ def open_issue_growth(
             ):
 
                 # find the nearest date to the previous month's date from created_at dates
-                index = find_nearest(created_at, previous_datetime)
+                index = int(find_nearest(created_at, previous_datetime))
 
                 if created_at[index] >= previous_datetime:
                     """
@@ -645,7 +741,7 @@ def open_issue_growth(
 
             # calculates issues of all pages starting from first page to (resultant page - 1).
             # NOTE: we already computed stars in the resultant page.
-            if i == 0:
+            if not visited_flag:
                 remaining_pages_issues = (
                     100 * (result - low_bound) if result > low_bound else 0
                 )
@@ -660,9 +756,9 @@ def open_issue_growth(
             )
 
             remaining_issues_in_page = len(result_page) - page_issues
-            visited_flag = (
-                True  # flag to indicate whether there has been a "result" hit
-            )
+
+            # flag to indicate whether there has been a "result" hit
+            visited_flag = True
 
             year = populate_result(now, cummulative_count, year)
         else:
@@ -670,11 +766,18 @@ def open_issue_growth(
             break
 
         current_task.update_state(
-            state="PROGRESS", meta={"current": i + 1, "total": timedelta_frequency}
+            state="PROGRESS",
+            meta={
+                "current": i + 1 + no_of_issues,
+                "total": timedelta_frequency + no_of_issues,
+            },
         )
 
         # unset & set variables
         low_bound = result
         array = list(range(low_bound, pages + 1))
 
-    return OrderedDict(reversed(list(result_issues_dict.items())))
+    return {
+        "graph_data": OrderedDict(reversed(list(result_issues_dict.items()))),
+        "issue_map": issue_map,
+    }

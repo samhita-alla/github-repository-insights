@@ -6,7 +6,7 @@ import _ from "lodash";
 export default {
   name: "BarChartContainer",
   extends: Bar,
-  props: ["chartData"],
+  props: ["chartData", "label"],
   watch: {
     chartData: {
       handler() {
@@ -32,7 +32,7 @@ export default {
               },
               scaleLabel: {
                 display: true,
-                labelString: "Stars",
+                labelString: this.label,
               },
             },
           ],
@@ -52,7 +52,7 @@ export default {
         },
         legend: {
           display: true,
-          position: "right",
+          position: "top",
         },
         layout: { padding: { top: 20 } },
       },

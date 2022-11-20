@@ -5,3 +5,4 @@ numpy
 requests
 jinja2
 celery[redis]
+nltk

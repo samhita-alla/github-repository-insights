@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from .worker import stargrowth, open_issue_growth, celery as celery_app
+from worker import stargrowth, openissuegrowth, celery as celery_app
 from typing import Optional
 
 app = FastAPI()
@@ -68,11 +68,13 @@ def open_issue_growth(
     access_token: Optional[str] = None,
     timedelta: int = 7,
     timedelta_frequency: int = 2,
+    issue_stats: bool = False,
 ):
-    task = open_issue_growth.delay(
+    task = openissuegrowth.delay(
         github_api=github_api,
         access_token=access_token,
         timedelta=timedelta,
         timedelta_frequency=timedelta_frequency,
+        issue_stats=issue_stats,
     )
     return JSONResponse({"task_id": task.id})
