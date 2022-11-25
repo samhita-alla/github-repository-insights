@@ -129,199 +129,15 @@
       </form>
       <!-- END FORM -->
       <!-- START STAR GROWTH UI -->
-      <div
-        class="card my-5"
-        v-if="starGrowthChartData || starGrowthError || starGrowthProgress"
-      >
-        <div class="card-header" id="headingStarGrowth">
-          <h5 class="mb-0">Star Growth</h5>
-        </div>
-        <div>
-          <!-- START STAR GROWTH ADD REPO UI -->
-          <div
-            class="my-5"
-            v-if="
-              starGrowthChartData && starGrowthChartData.datasets.length >= 1
-            "
-          >
-            <img
-              :src="imgSrcStarGrowth"
-              @click="isAddRepoStarGrowth = !isAddRepoStarGrowth"
-              role="button"
-              class="d-block mx-auto mb-3"
-            />
-            <small>To add a new repo, click on the + button.</small>
-          </div>
-          <div class="card mx-3" v-if="isAddRepoStarGrowth">
-            <div class="card-body">
-              <form @submit.prevent="addRepoSubmitStarGrowth">
-                <div class="form-group mb-3">
-                  <label for="other-github-api-star-growth">GitHub Repo</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="other-github-api-star-growth"
-                    placeholder="flyteorg/flyte"
-                    v-model="otherGithubApiStarGrowth"
-                    :disabled="
-                      starGrowthChartData &&
-                      starGrowthChartData.datasets.length >= 5
-                    "
-                    required
-                  />
-                  <small class="form-text text-muted"
-                    >GitHub Repo has to be of the format
-                    {organization/repo}.</small
-                  >
-                </div>
-                <div class="form-group mb-3">
-                  <label for="other-access-token">Access Token</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="other-access-token"
-                    v-model="otherAccessToken"
-                    :disabled="
-                      starGrowthChartData &&
-                      starGrowthChartData.datasets.length >= 2
-                    "
-                  />
-                  <small class="form-text text-muted"
-                    >Useful to circumvent the rate limit issue.</small
-                  >
-                </div>
-                <button
-                  type="submit"
-                  class="btn btn-primary"
-                  :disabled="
-                    (starGrowthChartData &&
-                      starGrowthChartData.datasets.length >= 5) ||
-                    starGrowthProgress
-                  "
-                >
-                  Add repository
-                </button>
-              </form>
-            </div>
-          </div>
-          <!-- END STAR GROWTH ADD REPO UI -->
-          <div aria-labelledby="headingStarGrowth">
-            <div class="card-body">
-              <div
-                v-if="
-                  starGrowthChartData && starGrowthChartData.datasets.length > 1
-                "
-                class="mt-3"
-              >
-                <span
-                  v-for="(dataset, index) in starGrowthChartData.datasets"
-                  :key="dataset.label"
-                >
-                  <div
-                    v-if="index != 0"
-                    class="btn btn-sm btn-secondary remove-tag-btn me-2"
-                    @click="removeTag(index, 'stargrowth')"
-                  >
-                    <span>x</span>
-                    {{ dataset.label }}
-                  </div>
-                </span>
-              </div>
-              <div class="my-5">
-                <p id="progress-label" v-if="starGrowthProgress">
-                  ⭐️ Crunching GitHub APIs ⭐️
-                </p>
-                <div v-if="starGrowthProgress" class="progress">
-                  <div
-                    class="progress-bar"
-                    role="progressbar"
-                    style="width: 0%"
-                    id="stargrowth-progress"
-                  >
-                    0%
-                  </div>
-                </div>
-              </div>
-              <div
-                v-if="
-                  starGrowthChartData &&
-                  starGrowthChartData.datasets.length >= 5
-                "
-                class="alert alert-warning alert-dismissible fade show d-flex align-items-center"
-                role="alert"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  fill="currentColor"
-                  class="bi bi-exclamation-triangle-fill flex-shrink-0 me-2"
-                  viewBox="0 0 16 16"
-                  role="img"
-                  aria-label="Warning:"
-                >
-                  <path
-                    d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"
-                  />
-                </svg>
-                No more than 5 repositories can be added. Please remove a
-                repository to continue.
-                <button
-                  type="button"
-                  class="btn-close"
-                  data-bs-dismiss="alert"
-                  aria-label="Close"
-                ></button>
-              </div>
-              <div
-                v-if="starGrowthError"
-                class="my-5 alert alert-warning alert-dismissible d-flex align-items-center"
-                :class="starGrowthError ? 'show' : 'fade'"
-                role="alert"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  fill="currentColor"
-                  class="bi bi-exclamation-triangle-fill flex-shrink-0 me-2"
-                  viewBox="0 0 16 16"
-                  role="img"
-                  aria-label="Warning:"
-                >
-                  <path
-                    d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"
-                  />
-                </svg>
-                {{ starGrowthError }}
-                <button
-                  type="button"
-                  class="btn-close"
-                  aria-label="Close"
-                  @click="starGrowthErrorButton()"
-                ></button>
-              </div>
-              <div
-                class="row justify-content-center"
-                id="stargrowth-result"
-                v-if="starGrowthChartData"
-              >
-                <div class="col-md-10 col-sm-12">
-                  <h3>
-                    Star growth every {{ form.timeDelta }} days, repeated
-                    {{ form.timeDeltaFrequency }} times.
-                  </h3>
-                  <BarChartContainer
-                    class="my-5"
-                    :chart-data="starGrowthChartData"
-                    label="Stars"
-                  ></BarChartContainer>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <SubComponentContainer
+        :chartData="starGrowthChartData"
+        :growthError="starGrowthError"
+        :imgSrc="imgSrcStarGrowth"
+        :isAddRepo="isAddRepoStarGrowth"
+        heading="stargrowth"
+        v-model:otherGithubApi="otherGithubApiStarGrowth"
+        label="Stars"
+      ></SubComponentContainer>
       <!-- END STAR GROWTH UI -->
       <!-- START OPEN ISSUE/PR GROWTH UI -->
       <div
@@ -354,7 +170,9 @@
           </div>
           <div class="card mx-3" v-if="isAddRepoOpenIssueGrowth">
             <div class="card-body">
-              <form @submit.prevent="addRepoSubmitOpenIssueGrowth">
+              <form
+                @submit.prevent="addRepoGrowth((entity = 'openissuegrowth'))"
+              >
                 <div class="form-group mb-3">
                   <label for="other-github-api-open-issue-growth"
                     >GitHub Repo</label
@@ -535,8 +353,12 @@
               <table class="table">
                 <thead>
                   <tr>
-                    <th>Addressed Issues</th>
-                    <th>Unaddressed Issues</th>
+                    <th>
+                      Addressed Issues ({{ issueTable.addressed.length }})
+                    </th>
+                    <th>
+                      Unaddressed Issues ({{ issueTable.unaddressed.length }})
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -586,10 +408,11 @@
 <script>
 import axios from "axios";
 import BarChartContainer from "../components/ChartComponent.vue";
+import SubComponentContainer from "../components/SubComponent.vue";
 
 export default {
   name: "HomeView",
-  components: { BarChartContainer },
+  components: { BarChartContainer, SubComponentContainer },
   data() {
     return {
       form: {
@@ -599,19 +422,25 @@ export default {
         timeDeltaFrequency: 2,
         starGrowthCheck: true,
         openIssueGrowthCheck: false,
+        contributorGrowthCheck: false,
         issueTable: false,
       },
       starGrowthChartData: null,
       openIssueGrowthChartData: null,
+      contributorGrowthChartData: null,
       starGrowthProgress: null,
       openIssueGrowthProgress: null,
+      contributorGrowthProgress: null,
       starGrowthError: "",
       openIssueGrowthError: "",
+      contributorGrowthError: "",
       otherGithubApiStarGrowth: "",
       otherGithubApiOpenIssueGrowth: "",
+      otherGithubApiContributorGrowth: "",
       issueTable: false,
       isAddRepoStarGrowth: false,
       isAddRepoOpenIssueGrowth: false,
+      isAddRepoContributorGrowth: false,
       toggle: false,
       backgroundColor: [
         "rgba(255, 99, 132, 0.2)",
@@ -651,6 +480,15 @@ export default {
           issuetable: "issueTable",
           other_github_api: "otherGithubApiOpenIssueGrowth",
         },
+        contributorgrowth: {
+          result_id: "contributorgrowth-result",
+          progress_id: "contributorgrowth-progress",
+          progress: "contributorGrowthProgress",
+          chartdata: "contributorGrowthChartData",
+          error: "contributorGrowthError",
+          check: "contributorGrowthCheck",
+          other_github_api: "otherGithubApiContributorGrowth",
+        },
       },
     };
   },
@@ -665,8 +503,17 @@ export default {
         ? require("../assets/icons8-close.svg")
         : require("../assets/icons8-plus-+.svg");
     },
+    imgSrcContributorGrowth: function () {
+      return this.isAddRepoContributorGrowth
+        ? require("../assets/icons8-close.svg")
+        : require("../assets/icons8-plus-+.svg");
+    },
     allowSubmit: function () {
-      return this.form.starGrowthCheck || this.form.openIssueGrowthCheck;
+      return (
+        this.form.starGrowthCheck ||
+        this.form.openIssueGrowthCheck ||
+        this.form.contributorGrowthCheck
+      );
     },
     otherAccessToken: function () {
       return this.form.accessToken;
@@ -691,7 +538,8 @@ export default {
     submit: function () {
       if (
         (this.form.starGrowthCheck && this.starGrowthChartData) ||
-        (this.form.openIssueGrowthCheck && this.openIssueGrowthChartData)
+        (this.form.openIssueGrowthCheck && this.openIssueGrowthChartData) ||
+        (this.form.contributorGrowthCheck && this.contributorGrowthChartData)
       ) {
         let message = "This will reset the chart(s). Continue?";
         if (confirm(message) == false) {
@@ -815,36 +663,10 @@ export default {
           console.log(err);
         });
     },
-    addRepoSubmitStarGrowth: function () {
+    addRepoGrowth: function (entity) {
       let key = "stargrowth";
-      const checkLabel = (obj) => obj.label === this.otherGithubApiStarGrowth;
-      if (this[this.entity_mapping[key].chartdata].datasets.some(checkLabel)) {
-        this[this.entity_mapping[key].error] =
-          "This repo has already been added.";
-        return;
-      }
-      axios
-        .post("/" + key, null, {
-          params: {
-            github_api: this.otherGithubApiStarGrowth,
-            access_token: this.otherAccessToken,
-            timedelta: this.form.timeDelta,
-            timedelta_frequency: this.form.timeDeltaFrequency,
-          },
-        })
-        .then((res) => {
-          this.getStatus(res.data.task_id, key, true);
-          this[this.entity_mapping[key].progress] = true;
-          this[this.entity_mapping[key].error] = "";
-        })
-        .catch((error) => {
-          console.error(error);
-        });
-    },
-    addRepoSubmitOpenIssueGrowth: function () {
-      let key = "openissuegrowth";
       const checkLabel = (obj) =>
-        obj.label === this.otherGithubApiOpenIssueGrowth;
+        obj.label === this[this.entity_mapping[entity].other_github_api];
       if (this[this.entity_mapping[key].chartdata].datasets.some(checkLabel)) {
         this[this.entity_mapping[key].error] =
           "This repo has already been added.";
@@ -853,7 +675,7 @@ export default {
       axios
         .post("/" + key, null, {
           params: {
-            github_api: this.otherGithubApiOpenIssueGrowth,
+            github_api: this[this.entity_mapping[entity].other_github_api],
             access_token: this.otherAccessToken,
             timedelta: this.form.timeDelta,
             timedelta_frequency: this.form.timeDeltaFrequency,
@@ -867,15 +689,6 @@ export default {
         .catch((error) => {
           console.error(error);
         });
-    },
-    removeTag: function (index, entity) {
-      this[this.entity_mapping[entity].chartdata].datasets.splice(index, 1);
-    },
-    openIssueGrowthErrorButton: function () {
-      this.openIssueGrowthError = false;
-    },
-    starGrowthErrorButton: function () {
-      this.starGrowthError = false;
     },
   },
 };

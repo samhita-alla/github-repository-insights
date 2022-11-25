@@ -5,7 +5,7 @@ from collections import OrderedDict
 from typing import Optional
 from urllib.parse import urljoin
 
-import logging
+from collections import Counter
 
 import nltk
 import numpy as np
@@ -403,11 +403,10 @@ def openissuegrowth(
         }
     else:
         headers = {
-            "Accept": "application/vnd.github.v3.star+json",
+            "Accept": "application/vnd.github.v3+json",
         }
 
-    api_prefix = urljoin("https://api.github.com/repos/", github_api) + "/"
-
+    api_prefix = urljoin("https://api.github.com/repos/", github_api)
     retry_strategy = Retry(
         total=LOOP,
         status_forcelist=[429, 500, 502, 503, 504, 403],
@@ -422,6 +421,7 @@ def openissuegrowth(
 
     issues_url = urljoin(api_prefix, "issues?per_page=100")
 
+    response = None
     try:
         response = session.get(issues_url, headers=headers)
     except request_error_codes:
@@ -780,4 +780,161 @@ def openissuegrowth(
     return {
         "graph_data": OrderedDict(reversed(list(result_issues_dict.items()))),
         "issue_map": issue_map,
+    }
+
+
+@celery.task(name="contributorgrowth")
+def contributorgrowth(
+    github_api: str,
+    access_token: Optional[str] = None,
+    timedelta: int = 7,
+    timedelta_frequency: int = 2,
+):
+    if access_token:
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+            "Authorization": "token %s" % access_token,
+        }
+    else:
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+        }
+
+    api_prefix = urljoin("https://api.github.com/repos/", github_api)
+    retry_strategy = Retry(
+        total=LOOP,
+        status_forcelist=[429, 500, 502, 503, 504, 403],
+        backoff_factor=0.2,
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session = requests.Session()
+    session.mount("https://", adapter)
+
+    assert_status_hook = lambda response, *args, **kwargs: response.raise_for_status()
+    session.hooks["response"] = [assert_status_hook]
+
+    previous_datetime = datetime.datetime.now()
+
+    result_contributors_dict = OrderedDict()
+    year = None
+
+    def populate_result(now, new_contributors, year=None):
+        if not year:
+            year = now.year
+        if now.year != year:
+            result_contributors_dict[
+                f"{now.year} {now.month}/{now.day}"
+            ] = new_contributors
+            year = now.year
+        else:
+            result_contributors_dict[f"{now.month}/{now.day}"] = new_contributors
+
+        return year
+
+    for (i, _) in enumerate(range(timedelta_frequency)):
+        # fetch time
+        now = previous_datetime
+        previous_datetime = now - datetime.timedelta(days=timedelta)
+        previous_datetime_iso = previous_datetime.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        # fetch commits for the last 30 days
+        commits_url = urljoin(
+            api_prefix, f"commits?since={previous_datetime_iso}&per_page=100"
+        )
+        try:
+            commits_raw = requests.get(commits_url, headers=headers)
+        except request_error_codes:
+            return EXCEPTION_MESSAGE
+
+        commit_growth = commits_raw.json()
+
+        while "next" in commits_raw.links.keys():
+            try:
+                commits_raw = requests.get(
+                    commits_raw.links["next"]["url"], headers=headers
+                )
+            except request_error_codes:
+                return EXCEPTION_MESSAGE
+            commit_growth.extend(commits_raw.json())
+
+        contributor_names = []
+        for commit in commit_growth:
+            if "author" in commit and commit["author"] and "login" in commit["author"]:
+                contributor_names.append(commit["author"]["login"])
+            contributor_names.append(commit["commit"]["author"]["name"])
+
+        # count the number of commits per contributor
+        contributor_count = Counter(contributor_names)
+
+        contributors_url = urljoin(api_prefix, "contributors?per_page=100&anon=1")
+
+        try:
+            contributors_raw = requests.get(contributors_url, headers=headers)
+        except request_error_codes:
+            return EXCEPTION_MESSAGE
+
+        def get_contributors(contributors_raw, new_contributors=0):
+            """
+            Loop through contributors page by page and validate if the contributor is new or not.
+            """
+            for contributor in contributors_raw.json():
+                contributor_name = None
+
+                # the first 500 contributors have GitHub info associated so "login" key would exist.
+                # the rest of the contributors are anonymous so "login" key would not exist; instead we'd have to use the "name" key.
+                if "login" in contributor and contributor["login"] in contributor_count:
+                    contributor_name = contributor["login"]
+                elif "name" in contributor and contributor["name"] in contributor_count:
+                    contributor_name = contributor["name"]
+
+                if contributor_name:
+                    # if number of contributions for the last n days is equal to the total number of contributions, then the contributor is new
+                    if (
+                        contributor_name in contributor_count
+                        and contributor_count[contributor_name]
+                        == contributor["contributions"]
+                    ):
+                        new_contributors += 1
+
+                    # delete the evaluated contributor from the list
+                    del contributor_count[contributor_name]
+
+            return new_contributors
+
+        def contributors_helper(contributors_raw):
+            try:
+                contributors_raw = requests.get(
+                    contributors_raw.links["next"]["url"], headers=headers
+                )
+            except request_error_codes:
+                return EXCEPTION_MESSAGE
+            return contributors_raw
+
+        new_contributors = 0
+        if contributor_count:
+            # first iteration
+            new_contributors = get_contributors(contributors_raw)
+
+            # second,..., nth iteration
+            while "next" in contributors_raw.links.keys():
+                contributors_raw = contributors_helper(contributors_raw)
+                new_contributors = get_contributors(contributors_raw, new_contributors)
+
+                # if there are no more contributors to evaluate, then break the loop
+                if not len(contributor_count):
+                    break
+
+        year = populate_result(now, new_contributors, year)
+
+        current_task.update_state(
+            state="PROGRESS",
+            meta={
+                "current": i + 1,
+                "total": timedelta_frequency,
+            },
+        )
+
+    return {
+        "graph_data": OrderedDict(reversed(list(result_contributors_dict.items()))),
+        "commits": len(commit_growth),
     }
