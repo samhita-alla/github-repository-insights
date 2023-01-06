@@ -21,7 +21,6 @@ from requests.exceptions import (
     RetryError,
     Timeout,
 )
-import json
 from urllib3.util.retry import Retry
 
 LOOP = 3
@@ -406,7 +405,7 @@ def openissuegrowth(
             "Accept": "application/vnd.github.v3+json",
         }
 
-    api_prefix = urljoin("https://api.github.com/repos/", github_api)
+    api_prefix = urljoin("https://api.github.com/repos/", github_api) + "/"
     retry_strategy = Retry(
         total=LOOP,
         status_forcelist=[429, 500, 502, 503, 504, 403],
@@ -451,15 +450,19 @@ def openissuegrowth(
                     match = pattern.match(timeline.links["last"]["url"])
                     pages = int(match.group(2))
 
+                timeline_last_page = None
                 try:
-                    timeline_last_page = session.get(
-                        urljoin(timeline_url, f"?per_page=100&page={pages}"),
-                        headers=headers,
-                    ).json()
+                    if pages:
+                        timeline_last_page = session.get(
+                            urljoin(timeline_url, f"?per_page=100&page={pages}"),
+                            headers=headers,
+                        ).json()
                 except request_error_codes:
                     return EXCEPTION_MESSAGE
 
-                last_timeline_event = timeline_last_page[-1]
+                last_timeline_event = (
+                    timeline_last_page[-1] if timeline_last_page else None
+                )
                 if (
                     last_timeline_event
                     and last_timeline_event["event"] == "cross-referenced"

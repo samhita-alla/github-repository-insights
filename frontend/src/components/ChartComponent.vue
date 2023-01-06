@@ -1,21 +1,31 @@
+<template>
+  <Bar :data="chartData" :style="myStyles" />
+</template>
+
 <script>
 import { Bar } from "vue-chartjs";
-import ChartJsPluginDataLabels from "chartjs-plugin-datalabels";
-import _ from "lodash";
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+} from "chart.js";
+
+ChartJS.register(
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale
+);
 
 export default {
   name: "BarChartContainer",
-  extends: Bar,
-  props: ["chartData", "label"],
-  watch: {
-    chartData: {
-      handler() {
-        const clone = _.cloneDeep(this.chartData);
-        this.renderChart(clone, this.options);
-      },
-      deep: true,
-    },
-  },
+  components: { Bar },
   data() {
     return {
       options: {
@@ -58,9 +68,18 @@ export default {
       },
     };
   },
-  mounted() {
-    this.addPlugin(ChartJsPluginDataLabels);
-    this.renderChart(this.chartData, this.options);
+  computed: {
+    chartData() {
+      return this.chartData;
+    },
+    chartOptions() {
+      return this.options;
+    },
+    myStyles() {
+      return {
+        position: "relative",
+      };
+    },
   },
 };
 </script>

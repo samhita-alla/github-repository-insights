@@ -1,34 +1,32 @@
 <template>
-  <div class="card my-5" v-if="chartData || growthError || growthProgress">
-    <div class="card-header" :id="'heading'">
-      <h5 class="mb-0">Star Growth</h5>
+  <div v-if="chartData || growthError || growthProgress" class="card my-5">
+    <div :id="'heading'" class="card-header">
+      <h5 class="mb-0">{{ heading }} Growth</h5>
     </div>
     <div>
-      <div class="my-5" v-if="chartData && chartData.datasets.length >= 1">
+      <div v-if="chartData && chartData.datasets.length >= 1" class="my-5">
         <img
           :src="imgSrc"
-          @click="mutableIsAddRepo = !mutableIsAddRepo"
           role="button"
           class="d-block mx-auto mb-3"
+          @click="mutableIsAddRepo = !mutableIsAddRepo"
         />
         <small>To add a new repo, click on the + button.</small>
       </div>
-      <div class="card mx-3" v-if="mutableIsAddRepo">
+      <div v-if="mutableIsAddRepo" class="card mx-3">
         <div class="card-body">
           <form @submit.prevent="addRepoGrowth((entity = 'stargrowth'))">
             <div class="form-group mb-3">
-              <label :for="other - github - api - +'heading'"
-                >GitHub Repo</label
-              >
+              <label :for="'other-github-api-' + heading">GitHub Repo</label>
               <input
+                :id="'other-github-api-' + heading"
                 type="text"
                 class="form-control"
-                :id="other - github - api - +'heading'"
                 placeholder="flyteorg/flyte"
                 :value="otherGithubApi"
-                @input="$emit('update:otherGithubApi', $event.target.value)"
                 :disabled="chartData && chartData.datasets.length >= 5"
                 required
+                @input="$emit('update:otherGithubApi', $event.target.value)"
               />
               <small class="form-text text-muted"
                 >GitHub Repo has to be of the format {organization/repo}.</small
@@ -37,10 +35,10 @@
             <div class="form-group mb-3">
               <label for="other-access-token">Access Token</label>
               <input
-                type="text"
-                class="form-control"
                 id="other-access-token"
                 v-model="otherAccessToken"
+                type="text"
+                class="form-control"
                 :disabled="chartData && chartData.datasets.length >= 2"
               />
               <small class="form-text text-muted"
@@ -77,15 +75,15 @@
             </span>
           </div>
           <div class="my-5">
-            <p id="progress-label" v-if="growthProgress">
+            <p v-if="growthProgress" id="progress-label">
               ⭐️ Crunching GitHub APIs ⭐️
             </p>
             <div v-if="growthProgress" class="progress">
               <div
+                :id="heading + '-progress'"
                 class="progress-bar"
                 role="progressbar"
                 style="width: 0%"
-                :id="'heading' + -progress"
               >
                 0%
               </div>
@@ -148,20 +146,69 @@
             ></button>
           </div>
           <div
-            class="row justify-content-center"
-            id="stargrowth-result"
             v-if="chartData"
+            :id="heading + '-result'"
+            class="row justify-content-center"
           >
-            <div class="col-md-10 col-sm-12">
+            <div class="chart-container col-md-10 col-sm-12">
               <h3>
-                {{ heading }} every {{ form.timeDelta }} days, repeated
-                {{ form.timeDeltaFrequency }} times.
+                {{ heading }} every {{ $parent.form.timeDelta }} days, repeated
+                {{ $parent.form.timeDeltaFrequency }} times.
               </h3>
               <BarChartContainer
-                class="my-5"
-                :chart-data="chartData"
-                :label="'label'"
+                :data="chartData"
+                :label="label"
               ></BarChartContainer>
+              <div
+                v-if="issueTable"
+                class="card row justify-content-center my-5"
+                id="openissuegrowth-table"
+              >
+                <div class="col-md-10 col-sm-12">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>
+                          Addressed Issues ({{ issueTable.addressed.length }})
+                        </th>
+                        <th>
+                          Unaddressed Issues ({{
+                            issueTable.unaddressed.length
+                          }})
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="text-left">
+                          <ul class="list-group">
+                            <a
+                              v-for="(value, index) in issueTable.addressed"
+                              :key="index"
+                              class="list-group-item"
+                              :href="value.url"
+                            >
+                              {{ value.title }}
+                            </a>
+                          </ul>
+                        </td>
+                        <td class="text-left">
+                          <ul class="list-group">
+                            <a
+                              v-for="(value, index) in issueTable.unaddressed"
+                              :key="index"
+                              class="list-group-item"
+                              :href="value.url"
+                            >
+                              {{ value.title }}
+                            </a>
+                          </ul>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -171,18 +218,23 @@
 </template>
 
 <script>
+import BarChartContainer from "./ChartComponent.vue";
+
 export default {
   name: "SubComponentContainer",
-  props: [
-    "chartData",
-    "growthError",
-    "growthProgress",
-    "imgSrc",
-    "isAddRepo",
-    "heading",
-    "label",
-    "otherGithubApi",
-  ],
+  components: { BarChartContainer },
+  props: {
+    chartData: { type: [Object, null], required: true },
+    growthError: { type: String, required: true },
+    growthProgress: { type: [Boolean, null], required: true },
+    imgSrc: { type: String, required: true },
+    isAddRepo: { type: Boolean, required: true },
+    heading: { type: String, required: true },
+    label: { type: String, required: true },
+    otherGithubApi: { type: String, required: true },
+    issueTable: { type: Object, required: true },
+  },
+  emits: ["update:otherGithubApi"],
   data: function () {
     return {
       mutableIsAddRepo: this.isAddRepo,
@@ -190,3 +242,10 @@ export default {
   },
 };
 </script>
+
+<style>
+.chart-container {
+  position: relative;
+  margin: auto;
+}
+</style>
