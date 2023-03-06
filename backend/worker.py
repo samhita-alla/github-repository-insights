@@ -57,6 +57,7 @@ classifier = None
 @worker_process_init.connect()
 def setup(**kwargs):
     nltk.download("nps_chat")
+    nltk.download("punkt")
     posts = nltk.corpus.nps_chat.xml_posts()[:10000]
 
     featuresets = [
@@ -257,7 +258,7 @@ def stargrowth(
 
         return len(last_page.json())
 
-    for (i, _) in enumerate(range(timedelta_frequency)):
+    for i, _ in enumerate(range(timedelta_frequency)):
         # fetch time
         now = previous_datetime
         previous_datetime = now - datetime.timedelta(days=timedelta)
@@ -323,7 +324,6 @@ def stargrowth(
                     result_page[-1]["starred_at"], "%Y-%m-%dT%H:%M:%SZ"
                 )
             ):
-
                 # find the nearest date to the previous date from the starred dates
                 index = int(find_nearest(starred_at, previous_datetime))
 
@@ -625,7 +625,7 @@ def openissuegrowth(
     low_bound = 1
     visited_flag = False
 
-    for (i, _) in enumerate(range(timedelta_frequency)):
+    for i, _ in enumerate(range(timedelta_frequency)):
         # fetch time
         now = previous_datetime
         previous_datetime = now - datetime.timedelta(days=timedelta)
@@ -701,7 +701,6 @@ def openissuegrowth(
                     result_page[0]["created_at"], "%Y-%m-%dT%H:%M:%SZ"
                 )
             ):
-
                 # find the nearest date to the previous month's date from created_at dates
                 index = int(find_nearest(created_at, previous_datetime))
 
@@ -834,7 +833,7 @@ def contributorgrowth(
 
         return year
 
-    for (i, _) in enumerate(range(timedelta_frequency)):
+    for i, _ in enumerate(range(timedelta_frequency)):
         # fetch time
         now = previous_datetime
         previous_datetime = now - datetime.timedelta(days=timedelta)

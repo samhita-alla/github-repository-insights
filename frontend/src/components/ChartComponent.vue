@@ -1,5 +1,5 @@
 <template>
-  <Bar :data="chartData" :style="myStyles" />
+  <Bar :data="chartData" :style="myStyles" :options="chartOptions" :key="watchKeyChange" />
 </template>
 
 <script>
@@ -26,32 +26,29 @@ ChartJS.register(
 export default {
   name: "BarChartContainer",
   components: { Bar },
+  props: { chartComponentData: { type: Object, required: true }, label: { type: String, required: true } },
   data() {
     return {
+      watchKeyChange: 0,
       options: {
         responsive: true,
-        maintainAspectRatio: false,
         scales: {
-          yAxes: [
-            {
-              ticks: {
-                beginAtZero: true,
-              },
-              gridLines: {
-                color: "#F5F5F5",
-              },
-              scaleLabel: {
-                display: true,
-                labelString: this.label,
-              },
+          y: {
+            ticks: {
+              beginAtZero: true,
             },
-          ],
-          xAxes: [
-            {
-              gridLines: { display: false },
-              scaleLabel: { display: true, labelString: "Date" },
+            gridLines: {
+              color: "#F5F5F5",
             },
-          ],
+            scaleLabel: {
+              display: true,
+              labelString: this.label,
+            },
+          },
+          x: {
+            gridLines: { display: false },
+            scaleLabel: { display: true, labelString: "Date" },
+          },
         },
         plugins: {
           datalabels: {
@@ -70,7 +67,7 @@ export default {
   },
   computed: {
     chartData() {
-      return this.chartData;
+      return this.chartComponentData;
     },
     chartOptions() {
       return this.options;
@@ -81,5 +78,13 @@ export default {
       };
     },
   },
+  watch: {
+    chartComponentData: {
+      handler(n, o) {
+        this.watchKeyChange += 1;
+      },
+      deep: true
+    }
+  }
 };
 </script>

@@ -14,145 +14,92 @@
       <form @submit.prevent="submit">
         <div class="form-group mb-3">
           <label for="github-api">GitHub Repo</label>
-          <input
-            id="github-api"
-            v-model="form.githubApi"
-            type="text"
-            class="form-control"
-            placeholder="flyteorg/flyte"
-            required
-          />
-          <small class="form-text text-muted"
-            >GitHub Repo has to be of the format {organization/repo}.</small
-          >
+          <input id="github-api" v-model="form.githubApi" type="text" class="form-control" placeholder="flyteorg/flyte"
+            required />
+          <small class="form-text text-muted">GitHub Repo has to be of the format {organization/repo}.</small>
         </div>
         <div class="form-group mb-3">
           <label for="access-token">Access Token</label>
-          <input
-            id="access-token"
-            v-model="form.accessToken"
-            type="text"
-            class="form-control"
-          />
-          <small class="form-text text-muted"
-            >Useful to circumvent the rate limit issue.</small
-          >
+          <input id="access-token" v-model="form.accessToken" type="text" class="form-control" />
+          <small class="form-text text-muted">Useful to circumvent the rate limit issue.</small>
         </div>
         <div class="form-group mb-3">
-          <label for="timedelta"
-            >Timedelta (<span id="timedelta-rangeval">7</span>)</label
-          >
-          <input
-            id="timedelta"
-            v-model="form.timeDelta"
-            type="range"
-            class="form-range"
-            min="1"
-            max="90"
-            onInput="document.getElementById('timedelta-rangeval').innerText = document.getElementById('timedelta').value"
-          />
-          <small class="form-text text-muted"
-            >Number of days to consider as the base index, e.g., if 10, growth
-            will be computed every 10 days.</small
-          >
+          <label for="timedelta">Timedelta (<span id="timedelta-rangeval">7</span>)</label>
+          <input id="timedelta" v-model="form.timeDelta" type="range" class="form-range" min="1" max="90"
+            onInput="document.getElementById('timedelta-rangeval').innerText = document.getElementById('timedelta').value" />
+          <small class="form-text text-muted">Number of days to consider as the base index, e.g., if 10, growth
+            will be computed every 10 days.</small>
         </div>
         <div class="form-group mb-3">
-          <label for="timedelta-frequency"
-            >Frequency (<span id="timedelta-frequency-rangeval">2</span>)</label
-          >
-          <input
-            id="timedelta-frequency"
-            v-model="form.timeDeltaFrequency"
-            type="range"
-            class="form-range"
-            min="2"
+          <label for="timedelta-frequency">Frequency (<span id="timedelta-frequency-rangeval">2</span>)</label>
+          <input id="timedelta-frequency" v-model="form.timeDeltaFrequency" type="range" class="form-range" min="2"
             max="30"
-            onInput="document.getElementById('timedelta-frequency-rangeval').innerText = document.getElementById('timedelta-frequency').value"
-          />
-          <small class="form-text text-muted"
-            >Number of times Timedelta needs to be computed, e.g., if 2, growth
+            onInput="document.getElementById('timedelta-frequency-rangeval').innerText = document.getElementById('timedelta-frequency').value" />
+          <small class="form-text text-muted">Number of times Timedelta needs to be computed, e.g., if 2, growth
             will be computed for the last 10 days, and the 10 days before
-            it.</small
-          >
+            it.</small>
         </div>
         <div class="mb-3">
           <div class="form-check form-check-inline">
-            <input
-              id="stargrowth-checkbox"
-              v-model="form.starGrowthCheck"
-              class="form-check-input"
-              type="checkbox"
-              value=""
-              checked
-            />
+            <input id="stargrowth-checkbox" v-model="form.starGrowthCheck" class="form-check-input" type="checkbox"
+              value="" checked />
             <label class="form-check-label" for="stargrowth-checkbox">
               Star growth
             </label>
           </div>
           <div class="form-check form-check-inline">
-            <input
-              id="openissuegrowth-checkbox"
-              v-model="form.openIssueGrowthCheck"
-              class="form-check-input"
-              type="checkbox"
-              value=""
-            />
+            <input id="openissuegrowth-checkbox" v-model="form.openIssueGrowthCheck" class="form-check-input"
+              type="checkbox" value="" />
             <label class="form-check-label" for="openissuegrowth-checkbox">
               Open issue/PR growth
             </label>
           </div>
-          <div
-            v-if="form.openIssueGrowthCheck"
-            class="form-check form-check-inline"
-          >
-            <input
-              id="openissuestats-checkbox"
-              v-model="form.issueTable"
-              class="form-check-input"
-              type="checkbox"
-              value=""
-            />
+          <div v-if="form.openIssueGrowthCheck" class="form-check form-check-inline">
+            <input id="openissuestats-checkbox" v-model="form.issueTable" class="form-check-input" type="checkbox"
+              value="" />
             <label class="form-check-label" for="openissuestats-checkbox">
-              Issue Stats
+              Issue stats
+            </label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input id="contributorgrowth-checkbox" v-model="form.contributorGrowthCheck" class="form-check-input"
+              type="checkbox" value="" />
+            <label class="form-check-label" for="contributorgrowth-checkbox">
+              Contributor growth
             </label>
           </div>
         </div>
-        <button
-          type="submit"
-          class="btn btn-primary"
-          :disabled="
-            starGrowthProgress || openIssueGrowthProgress || !allowSubmit
-          "
-        >
+        <button type="submit" class="btn btn-primary" :disabled="
+          starGrowthProgress || openIssueGrowthProgress || !allowSubmit
+        ">
           Gimme the Graphs and Numbers!
         </button>
       </form>
       <!-- END FORM -->
       <!-- START STAR GROWTH UI -->
-      <SubComponentContainer
-        v-model:otherGithubApi="otherGithubApiStarGrowth"
-        :chart-data="starGrowthChartData"
-        :growth-error="starGrowthError"
-        :growth-progress="starGrowthProgress"
-        :img-src="imgSrcStarGrowth"
-        :is-add-repo="isAddRepoStarGrowth"
-        heading="stargrowth"
-        label="Stars"
-      ></SubComponentContainer>
+      <SubComponentContainer v-model:otherGithubApi="otherGithubApiStarGrowth" :chart-data="starGrowthChartData"
+        :growth-error="starGrowthError" :growth-progress="starGrowthProgress" :img-src="imgSrcStarGrowth"
+        :is-add-repo="isAddRepoStarGrowth" heading="stargrowth" title="Star Growth" label="Stars"
+        @add-repo-growth="addRepoGrowth" @remove-tag="removeTag" @growth-error-button="starGrowthErrorButton">
+      </SubComponentContainer>
       <!-- END STAR GROWTH UI -->
       <!-- START OPEN ISSUE/PR GROWTH UI -->
-      <SubComponentContainer
-        v-model:otherGithubApi="otherGithubApiOpenIssueGrowth"
-        :chart-data="openIssueGrowthChartData"
-        :growth-error="openIssueGrowthError"
-        :growth-progress="openIssueGrowthProgress"
-        :img-src="imgSrcOpenIssueGrowth"
-        :is-add-repo="isAddRepoOpenIssueGrowth"
-        :issue-table="issueTable"
-        heading="openissuegrowth"
-        label="Open Issues/PRs"
-      ></SubComponentContainer>
+      <SubComponentContainer v-model:otherGithubApi="otherGithubApiOpenIssueGrowth" :chart-data="openIssueGrowthChartData"
+        :growth-error="openIssueGrowthError" :growth-progress="openIssueGrowthProgress" :img-src="imgSrcOpenIssueGrowth"
+        :is-add-repo="isAddRepoOpenIssueGrowth" :issue-table="issueTable" heading="openissuegrowth"
+        title="Open Issue/PR Growth" label="Open Issues/PRs" @add-repo-growth="addRepoGrowth"
+        @growth-error-button="openIssueGrowthErrorButton" @remove-tag="removeTag">
+      </SubComponentContainer>
       <!-- END OPEN ISSUE/PR GROWTH UI -->
+      <!-- START CONTRIBUTOR GROWTH UI -->
+      <SubComponentContainer v-model:otherGithubApi="otherGithubApiContributorGrowth"
+        :chart-data="contributorGrowthChartData" :growth-error="contributorGrowthError"
+        :growth-progress="contributorGrowthProgress" :img-src="imgSrcContributorGrowth"
+        :is-add-repo="isAddRepoContributorGrowth" heading="contributorgrowth" title="Contributor Growth"
+        label="Contributors" @add-repo-growth="addRepoGrowth" @growth-error-button="contributorGrowthErrorButton"
+        @remove-tag="removeTag">
+      </SubComponentContainer>
+      <!-- END CONTRIBUTOR GROWTH UI -->
     </main>
   </div>
 </template>
@@ -360,13 +307,13 @@ export default {
                   label: this[this.entity_mapping[entity].other_github_api],
                   backgroundColor:
                     this.backgroundColor[
-                      this[this.entity_mapping[entity].chartdata].datasets
-                        .length
+                    this[this.entity_mapping[entity].chartdata].datasets
+                      .length
                     ],
                   borderColor:
                     this.borderColor[
-                      this[this.entity_mapping[entity].chartdata].datasets
-                        .length
+                    this[this.entity_mapping[entity].chartdata].datasets
+                      .length
                     ],
                   data: Object.values(res.data.task_result.graph_data),
                 });
@@ -399,11 +346,6 @@ export default {
               this[this.entity_mapping[entity].progress] = false;
               this[this.entity_mapping[entity].error] = res.data.task_result;
             }, 2000);
-            // setTimeout(() => {
-            //   document
-            //     .getElementById(this.entity_mapping[entity].result_id)
-            //     .scrollIntoView({ behavior: "smooth", block: "end" });
-            // }, 4000);
             return false;
           }
           setTimeout(() => {
@@ -415,16 +357,16 @@ export default {
         });
     },
     addRepoGrowth: function (entity) {
-      let key = "stargrowth";
       const checkLabel = (obj) =>
         obj.label === this[this.entity_mapping[entity].other_github_api];
-      if (this[this.entity_mapping[key].chartdata].datasets.some(checkLabel)) {
-        this[this.entity_mapping[key].error] =
+
+      if (this[this.entity_mapping[entity].chartdata].datasets.some(checkLabel)) {
+        this[this.entity_mapping[entity].error] =
           "This repo has already been added.";
         return;
       }
       axios
-        .post("/" + key, null, {
+        .post("/" + entity, null, {
           params: {
             github_api: this[this.entity_mapping[entity].other_github_api],
             access_token: this.otherAccessToken,
@@ -433,20 +375,27 @@ export default {
           },
         })
         .then((res) => {
-          this.getStatus(res.data.task_id, key, true);
-          this[this.entity_mapping[key].progress] = true;
-          this[this.entity_mapping[key].error] = "";
+          this.getStatus(res.data.task_id, entity, true);
+          this[this.entity_mapping[entity].progress] = true;
+          this[this.entity_mapping[entity].error] = "";
         })
         .catch((error) => {
           console.error(error);
         });
     },
+    removeTag: function (index, entity) {
+      this[this.entity_mapping[entity].chartdata].datasets.splice(index, 1);
+    },
+    openIssueGrowthErrorButton: function () {
+      this.openIssueGrowthError = false;
+    },
+    starGrowthErrorButton: function () {
+      this.starGrowthError = false;
+    },
+    contributorGrowthErrorButton: function () {
+      this.contributorGrowthError = false;
+    }
   },
 };
 </script>
 
-<style>
-.remove-tag-btn:hover {
-  text-decoration: line-through;
-}
-</style>
