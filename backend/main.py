@@ -88,7 +88,7 @@ def contributor_growth(
     timedelta: int = 7,
     timedelta_frequency: int = 2,
 ):
-    task = contributorgrowth(
+    task = contributorgrowth.delay(
         github_api=github_api,
         access_token=access_token,
         timedelta=timedelta,

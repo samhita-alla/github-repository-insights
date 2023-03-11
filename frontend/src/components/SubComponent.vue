@@ -80,8 +80,7 @@
           <div v-if="chartData" :id="heading + '-result'" class="row justify-content-center">
             <div class="chart-container col-md-10 col-sm-12">
               <h3>
-                {{ title }} every {{ $parent.form.timeDelta }} days, repeated
-                {{ $parent.form.timeDeltaFrequency }} times.
+                {{ title }} observed over {{ timedeltaf }} {{ $parent.form.timeDelta }}-day periods.
               </h3>
               <BarChartContainer :chart-component-data="chartData" :label="label"></BarChartContainer>
               <div v-if="issueTable" id="openissuegrowth-table" class="card row justify-content-center my-5">
@@ -133,6 +132,8 @@
 <script>
 import BarChartContainer from "./ChartComponent.vue";
 
+var converter = require("number-to-words");
+
 export default {
   name: "SubComponentContainer",
   components: { BarChartContainer },
@@ -147,13 +148,18 @@ export default {
     label: { type: String, required: true },
     otherGithubApi: { type: String, required: true },
     issueTable: { type: Boolean, required: false },
+    timeDeltaFrequency: { type: Number, required: true }
   },
   emits: ["update:otherGithubApi", "addRepoGrowth", "removeTag", "update:otherAccessToken", "growthErrorButton"],
   data() {
     return {
       mutableIsAddRepo: this.isAddRepo,
+      timedeltaf: "",
     };
   },
+  mounted() {
+    this.timedeltaf = converter.toWords(this.timeDeltaFrequency);
+  }
 };
 </script>
 
@@ -172,5 +178,4 @@ export default {
   overflow: auto;
   display: inline-block;
 }
-
 </style>

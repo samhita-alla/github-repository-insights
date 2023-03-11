@@ -79,15 +79,16 @@
       <!-- START STAR GROWTH UI -->
       <SubComponentContainer v-model:otherGithubApi="otherGithubApiStarGrowth" :chart-data="starGrowthChartData"
         :growth-error="starGrowthError" :growth-progress="starGrowthProgress" :img-src="imgSrcStarGrowth"
-        :is-add-repo="isAddRepoStarGrowth" heading="stargrowth" title="Star Growth" label="Stars"
-        @add-repo-growth="addRepoGrowth" @remove-tag="removeTag" @growth-error-button="starGrowthErrorButton">
+        :is-add-repo="isAddRepoStarGrowth" :time-delta-frequency="form.timeDeltaFrequency" heading="stargrowth"
+        title="Star Growth" label="Stars" @add-repo-growth="addRepoGrowth" @remove-tag="removeTag"
+        @growth-error-button="starGrowthErrorButton">
       </SubComponentContainer>
       <!-- END STAR GROWTH UI -->
       <!-- START OPEN ISSUE/PR GROWTH UI -->
       <SubComponentContainer v-model:otherGithubApi="otherGithubApiOpenIssueGrowth" :chart-data="openIssueGrowthChartData"
         :growth-error="openIssueGrowthError" :growth-progress="openIssueGrowthProgress" :img-src="imgSrcOpenIssueGrowth"
-        :is-add-repo="isAddRepoOpenIssueGrowth" :issue-table="issueTable" heading="openissuegrowth"
-        title="Open Issue/PR Growth" label="Open Issues/PRs" @add-repo-growth="addRepoGrowth"
+        :is-add-repo="isAddRepoOpenIssueGrowth" :issue-table="issueTable" :time-delta-frequency="form.timeDeltaFrequency"
+        heading="openissuegrowth" title="Open Issue/PR Growth" label="Open Issues/PRs" @add-repo-growth="addRepoGrowth"
         @growth-error-button="openIssueGrowthErrorButton" @remove-tag="removeTag">
       </SubComponentContainer>
       <!-- END OPEN ISSUE/PR GROWTH UI -->
@@ -95,9 +96,9 @@
       <SubComponentContainer v-model:otherGithubApi="otherGithubApiContributorGrowth"
         :chart-data="contributorGrowthChartData" :growth-error="contributorGrowthError"
         :growth-progress="contributorGrowthProgress" :img-src="imgSrcContributorGrowth"
-        :is-add-repo="isAddRepoContributorGrowth" heading="contributorgrowth" title="Contributor Growth"
-        label="Contributors" @add-repo-growth="addRepoGrowth" @growth-error-button="contributorGrowthErrorButton"
-        @remove-tag="removeTag">
+        :is-add-repo="isAddRepoContributorGrowth" :time-delta-frequency="form.timeDeltaFrequency"
+        heading="contributorgrowth" title="Contributor Growth" label="Contributors" @add-repo-growth="addRepoGrowth"
+        @growth-error-button="contributorGrowthErrorButton" @remove-tag="removeTag">
       </SubComponentContainer>
       <!-- END CONTRIBUTOR GROWTH UI -->
     </main>
@@ -115,7 +116,7 @@ export default {
     return {
       form: {
         githubApi: "flyteorg/flyte",
-        accessToken: "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",
+        accessToken: "",
         timeDelta: 7,
         timeDeltaFrequency: 2,
         starGrowthCheck: true,
