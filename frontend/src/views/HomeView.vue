@@ -1,13 +1,11 @@
 <template>
-  <div class="container">
+  <div class="container px-5 pt-5">
     <main>
       <div class="py-5 text-center">
-        <img class="d-block mx-auto mb-4" src="../assets/logo.png" alt="" />
-        <h2>Real-Time GitHub Stats</h2>
+        <h1>GitHub Repository Insights</h1>
         <p class="lead">
-          Generating real-time GitHub stats for your open-source projects is no
-          more a fuss. Assess the daily, weekly, monthly growth graphs to
-          understand how your project's faring.
+          Generate real-time GitHub insights for your open-source projects and stay informed on how your
+          project is progressing.
         </p>
       </div>
       <!-- START FORM -->
@@ -25,19 +23,18 @@
         </div>
         <div class="form-group mb-3">
           <label for="timedelta">Timedelta (<span id="timedelta-rangeval">7</span>)</label>
-          <input id="timedelta" v-model="form.timeDelta" type="range" class="form-range" min="1" max="90"
-            onInput="document.getElementById('timedelta-rangeval').innerText = document.getElementById('timedelta').value" />
-          <small class="form-text text-muted">Number of days to consider as the base index, e.g., if 10, growth
-            will be computed every 10 days.</small>
+          <input id="timedelta" v-model="form.timeDelta" type="range" class="form-range" min="1" max="30"
+            oninput="document.getElementById('timedelta-rangeval').innerText = document.getElementById('timedelta').value" />
+          <small class="form-text text-muted">Number of days to consider as the base index. For example, if set to 10,
+            growth will be computed every 10 days.</small>
         </div>
         <div class="form-group mb-3">
           <label for="timedelta-frequency">Frequency (<span id="timedelta-frequency-rangeval">2</span>)</label>
           <input id="timedelta-frequency" v-model="form.timeDeltaFrequency" type="range" class="form-range" min="2"
-            max="30"
-            onInput="document.getElementById('timedelta-frequency-rangeval').innerText = document.getElementById('timedelta-frequency').value" />
-          <small class="form-text text-muted">Number of times Timedelta needs to be computed, e.g., if 2, growth
-            will be computed for the last 10 days, and the 10 days before
-            it.</small>
+            max="20"
+            oninput="document.getElementById('timedelta-frequency-rangeval').innerText = document.getElementById('timedelta-frequency').value" />
+          <small class="form-text text-muted">Number of times Timedelta needs to be computed. For example, if set to 2,
+            growth will be calculated for the past 10 days as well as the 10 days before that.</small>
         </div>
         <div class="mb-3">
           <div class="form-check form-check-inline">
@@ -51,7 +48,7 @@
             <input id="openissuegrowth-checkbox" v-model="form.openIssueGrowthCheck" class="form-check-input"
               type="checkbox" value="" />
             <label class="form-check-label" for="openissuegrowth-checkbox">
-              Open issue/PR growth
+              Open issue/pull request growth
             </label>
           </div>
           <div v-if="form.openIssueGrowthCheck" class="form-check form-check-inline">
@@ -69,35 +66,35 @@
             </label>
           </div>
         </div>
-        <button type="submit" class="btn btn-primary" :disabled="
-          starGrowthProgress || openIssueGrowthProgress || !allowSubmit
+        <button type="submit" class="btn btn-dark" :disabled="
+          starGrowthProgress || openIssueGrowthProgress || contributorGrowthProgress || !allowSubmit
         ">
-          Gimme the Graphs and Numbers!
+          View Graph
         </button>
       </form>
       <!-- END FORM -->
       <!-- START STAR GROWTH UI -->
       <SubComponentContainer v-model:otherGithubApi="otherGithubApiStarGrowth" :chart-data="starGrowthChartData"
         :growth-error="starGrowthError" :growth-progress="starGrowthProgress" :img-src="imgSrcStarGrowth"
-        :is-add-repo="isAddRepoStarGrowth" :time-delta-frequency="form.timeDeltaFrequency" heading="stargrowth"
-        title="Star Growth" label="Stars" @add-repo-growth="addRepoGrowth" @remove-tag="removeTag"
+        :is-add-repo="isAddRepoStarGrowth" :time-delta-frequency=timeDeltaStr heading="stargrowth" title="Star Growth"
+        label="Stars" @add-repo-growth="addRepoGrowth" @remove-tag="removeTag"
         @growth-error-button="starGrowthErrorButton">
       </SubComponentContainer>
       <!-- END STAR GROWTH UI -->
       <!-- START OPEN ISSUE/PR GROWTH UI -->
       <SubComponentContainer v-model:otherGithubApi="otherGithubApiOpenIssueGrowth" :chart-data="openIssueGrowthChartData"
         :growth-error="openIssueGrowthError" :growth-progress="openIssueGrowthProgress" :img-src="imgSrcOpenIssueGrowth"
-        :is-add-repo="isAddRepoOpenIssueGrowth" :issue-table="issueTable" :time-delta-frequency="form.timeDeltaFrequency"
-        heading="openissuegrowth" title="Open Issue/PR Growth" label="Open Issues/PRs" @add-repo-growth="addRepoGrowth"
-        @growth-error-button="openIssueGrowthErrorButton" @remove-tag="removeTag">
+        :is-add-repo="isAddRepoOpenIssueGrowth" :issue-table="issueTable" :time-delta-frequency=timeDeltaStr
+        heading="openissuegrowth" title="Open Issue/Pull Request Growth" label="Open Issues/PRs"
+        @add-repo-growth="addRepoGrowth" @growth-error-button="openIssueGrowthErrorButton" @remove-tag="removeTag">
       </SubComponentContainer>
       <!-- END OPEN ISSUE/PR GROWTH UI -->
       <!-- START CONTRIBUTOR GROWTH UI -->
       <SubComponentContainer v-model:otherGithubApi="otherGithubApiContributorGrowth"
         :chart-data="contributorGrowthChartData" :growth-error="contributorGrowthError"
         :growth-progress="contributorGrowthProgress" :img-src="imgSrcContributorGrowth"
-        :is-add-repo="isAddRepoContributorGrowth" :time-delta-frequency="form.timeDeltaFrequency"
-        heading="contributorgrowth" title="Contributor Growth" label="Contributors" @add-repo-growth="addRepoGrowth"
+        :is-add-repo="isAddRepoContributorGrowth" :time-delta-frequency=timeDeltaStr heading="contributorgrowth"
+        title="Contributor Growth" label="Contributors" @add-repo-growth="addRepoGrowth"
         @growth-error-button="contributorGrowthErrorButton" @remove-tag="removeTag">
       </SubComponentContainer>
       <!-- END CONTRIBUTOR GROWTH UI -->
@@ -108,6 +105,8 @@
 <script>
 import axios from "axios";
 import SubComponentContainer from "../components/SubComponent.vue";
+import { ref } from "vue";
+var converter = require("number-to-words");
 
 export default {
   name: "HomeView",
@@ -118,12 +117,13 @@ export default {
         githubApi: "flyteorg/flyte",
         accessToken: "",
         timeDelta: 7,
-        timeDeltaFrequency: 2,
+        timeDeltaFrequency: ref(''),
         starGrowthCheck: true,
         openIssueGrowthCheck: false,
         contributorGrowthCheck: false,
         issueTable: false,
       },
+      timeDeltaStr: "",
       starGrowthChartData: null,
       openIssueGrowthChartData: null,
       contributorGrowthChartData: null,
@@ -150,15 +150,6 @@ export default {
         "rgba(153, 102, 255, 0.2)",
         "rgba(201, 203, 207, 0.2)",
       ],
-      borderColor: [
-        "rgb(255, 99, 132)",
-        "rgb(255, 159, 64)",
-        "rgb(255, 205, 86)",
-        "rgb(75, 192, 192)",
-        "rgb(54, 162, 235)",
-        "rgb(153, 102, 255)",
-        "rgb(201, 203, 207)",
-      ],
       entity_mapping: {
         stargrowth: {
           result_id: "stargrowth-result",
@@ -168,6 +159,7 @@ export default {
           error: "starGrowthError",
           check: "starGrowthCheck",
           other_github_api: "otherGithubApiStarGrowth",
+          usedColors: [],
         },
         openissuegrowth: {
           result_id: "openissuegrowth-result",
@@ -178,6 +170,7 @@ export default {
           check: "openIssueGrowthCheck",
           issuetable: "issueTable",
           other_github_api: "otherGithubApiOpenIssueGrowth",
+          usedColors: [],
         },
         contributorgrowth: {
           result_id: "contributorgrowth-result",
@@ -187,6 +180,7 @@ export default {
           error: "contributorGrowthError",
           check: "contributorGrowthCheck",
           other_github_api: "otherGithubApiContributorGrowth",
+          usedColors: [],
         },
       },
     };
@@ -214,14 +208,12 @@ export default {
         this.form.contributorGrowthCheck
       );
     },
-    otherAccessToken: function () {
-      return this.form.accessToken;
-    },
   },
   watch: {
     form: {
       handler: function () {
         localStorage.setItem("form", JSON.stringify(this.form));
+        this.timeDeltaStr = converter.toWords(this.form.timeDeltaFrequency);
       },
       deep: true,
     },
@@ -304,28 +296,25 @@ export default {
             setTimeout(() => {
               this[this.entity_mapping[entity].progress] = false;
               if (addRepo) {
+                var unusedColors = this.backgroundColor.filter(x => !this.entity_mapping[entity].usedColors.includes(x));
+                var currentColor = unusedColors[Math.floor(Math.random() * unusedColors.length)];
+                this.entity_mapping[entity].usedColors.push(currentColor);
                 this[this.entity_mapping[entity].chartdata].datasets.push({
                   label: this[this.entity_mapping[entity].other_github_api],
-                  backgroundColor:
-                    this.backgroundColor[
-                    this[this.entity_mapping[entity].chartdata].datasets
-                      .length
-                    ],
-                  borderColor:
-                    this.borderColor[
-                    this[this.entity_mapping[entity].chartdata].datasets
-                      .length
-                    ],
+                  backgroundColor: currentColor,
+                  borderColor: currentColor,
                   data: Object.values(res.data.task_result.graph_data),
                 });
               } else {
+                var currentColor = this.backgroundColor[0]
+                this.entity_mapping[entity].usedColors = [currentColor];
                 this[this.entity_mapping[entity].chartdata] = {
                   labels: Object.keys(res.data.task_result.graph_data),
                   datasets: [
                     {
                       label: this.form.githubApi,
-                      backgroundColor: this.backgroundColor[0],
-                      borderColor: this.borderColor[0],
+                      backgroundColor: currentColor,
+                      borderColor: currentColor,
                       data: Object.values(res.data.task_result.graph_data),
                     },
                   ],
@@ -370,7 +359,7 @@ export default {
         .post("/" + entity, null, {
           params: {
             github_api: this[this.entity_mapping[entity].other_github_api],
-            access_token: this.otherAccessToken,
+            access_token: this.form.accessToken,
             timedelta: this.form.timeDelta,
             timedelta_frequency: this.form.timeDeltaFrequency,
           },

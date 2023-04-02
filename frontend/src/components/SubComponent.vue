@@ -1,34 +1,27 @@
 <template>
   <div v-if="chartData || growthError || growthProgress" class="card my-5">
-    <div :id="'heading'" class="card-header">
+    <div :id="'heading'" class="card-header text-white bg-dark">
       <h5 class="mb-0">{{ title }}</h5>
     </div>
-    <div>
+    <div class="card-body">
       <div v-if="chartData && chartData.datasets.length >= 1" class="my-5">
         <img :src="imgSrc" role="button" class="d-block mx-auto mb-3" @click="mutableIsAddRepo = !mutableIsAddRepo" />
-        <small>To add a new repo, click on the + button.</small>
+        <small>To add a new repository, simply click the plus(+) button.</small>
       </div>
       <div v-if="mutableIsAddRepo" class="card mx-3">
         <div class="card-body">
           <form @submit.prevent="$emit('addRepoGrowth', heading)">
             <div class="form-group mb-3">
               <label :for="'other-github-api-' + heading">GitHub Repo</label>
-              <input :id="'other-github-api-' + heading" type="text" class="form-control" placeholder="flyteorg/flyte"
-                :value="otherGithubApi" :disabled="chartData && chartData.datasets.length >= 5" required
+              <input :id="'other-github-api-' + heading" type="text" class="form-control" :value="otherGithubApi"
+                :disabled="chartData && chartData.datasets.length >= 5" required
                 @input="$emit('update:otherGithubApi', $event.target.value)" />
               <small class="form-text text-muted">GitHub Repo has to be of the format {organization/repo}.</small>
             </div>
-            <div class="form-group mb-3">
-              <label for="other-access-token">Access Token</label>
-              <input id="other-access-token" type="text" class="form-control"
-                :disabled="chartData && chartData.datasets.length >= 2"
-                @input="$emit('update:otherAccessToken', $event.target.value)" />
-              <small class="form-text text-muted">Useful to circumvent the rate limit issue.</small>
-            </div>
-            <button type="submit" class="btn btn-primary" :disabled="
+            <button type="submit" class="btn btn-dark" :disabled="
               (chartData && chartData.datasets.length >= 5) || growthProgress
             ">
-              Add repository
+              Add Repository
             </button>
           </form>
         </div>
@@ -46,7 +39,7 @@
           </div>
           <div class="my-5">
             <p v-if="growthProgress" id="progress-label">
-              ⭐️ Crunching GitHub APIs ⭐️
+              Crunching GitHub APIs
             </p>
             <div v-if="growthProgress" class="progress">
               <div :id="heading + '-progress'" class="progress-bar" role="progressbar" style="width: 0%">
@@ -62,8 +55,7 @@
               <path
                 d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
             </svg>
-            No more than 5 repositories can be added. Please remove a repository
-            to continue.
+            You can add up to 5 repositories only. Please remove a repository to proceed.
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
           </div>
           <div v-if="growthError" class="my-5 alert alert-warning alert-dismissible d-flex align-items-center"
@@ -80,7 +72,7 @@
           <div v-if="chartData" :id="heading + '-result'" class="row justify-content-center">
             <div class="chart-container col-md-10 col-sm-12">
               <h3>
-                {{ title }} observed over {{ timedeltaf }} {{ $parent.form.timeDelta }}-day periods.
+                {{ title }} observed over {{ timeDeltaFrequency }} {{ $parent.form.timeDelta }}-day periods.
               </h3>
               <BarChartContainer :chart-component-data="chartData" :label="label"></BarChartContainer>
               <div v-if="issueTable" id="openissuegrowth-table" class="card row justify-content-center my-5">
@@ -89,7 +81,7 @@
                     <thead class="sticky-top bg-white">
                       <tr>
                         <th>
-                          Recently Addressed Issues ({{ issueTable.addressed.length }})
+                          Active Issues ({{ issueTable.addressed.length }})
                         </th>
                         <th>
                           New Unaddressed Issues ({{
@@ -132,8 +124,6 @@
 <script>
 import BarChartContainer from "./ChartComponent.vue";
 
-var converter = require("number-to-words");
-
 export default {
   name: "SubComponentContainer",
   components: { BarChartContainer },
@@ -147,19 +137,15 @@ export default {
     title: { type: String, required: true },
     label: { type: String, required: true },
     otherGithubApi: { type: String, required: true },
-    issueTable: { type: Boolean, required: false },
-    timeDeltaFrequency: { type: Number, required: true }
+    issueTable: { type: Object, required: false },
+    timeDeltaFrequency: { type: String, required: true }
   },
-  emits: ["update:otherGithubApi", "addRepoGrowth", "removeTag", "update:otherAccessToken", "growthErrorButton"],
+  emits: ["update:otherGithubApi", "addRepoGrowth", "removeTag", "growthErrorButton"],
   data() {
     return {
       mutableIsAddRepo: this.isAddRepo,
-      timedeltaf: "",
     };
   },
-  mounted() {
-    this.timedeltaf = converter.toWords(this.timeDeltaFrequency);
-  }
 };
 </script>
 

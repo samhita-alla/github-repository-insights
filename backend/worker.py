@@ -130,11 +130,11 @@ def stargrowth(
         match = pattern.match(response.links["last"]["url"])
         pages = int(match.group(2))
 
-    def binary_search(array, low, high, key):
+    def binary_search(low, high, key):
         """
         BINARY SEARCH
 
-        This function binary searches the array [1, ..., pages] and returns the page that contains the key, i.e., the previous date to determine the number of stargazers between the previous date and the current date.
+        This function binary searches the pages array and returns the page that contains the key, i.e., the previous date to determine the number of stargazers between the previous date and the current date.
 
         NOTE: The stargazers API specifies starred_at dates in ascending order.
 
@@ -225,9 +225,9 @@ def stargrowth(
             if (start_date and end_date) and (start_date <= key <= end_date):
                 return mid
             elif start_date and key < start_date:
-                return binary_search(array, low, mid - 1, key)
+                return binary_search(low, mid - 1, key)
             else:
-                return binary_search(array, mid + 1, high, key)
+                return binary_search(mid + 1, high, key)
         else:
             return -1
 
@@ -272,7 +272,7 @@ def stargrowth(
         previous_datetime = now - datetime.timedelta(days=timedelta)
 
         # return the resultant page number (the one where we have our previous date)
-        result = binary_search(array, 1, len(array), previous_datetime)
+        result = binary_search(1, len(array), previous_datetime)
 
         if result == -1:
             number_of_stars = 0
@@ -520,7 +520,7 @@ def openissuegrowth(
         match = pattern.match(response.links["last"]["url"])
         pages = int(match.group(2))
 
-    def binary_search(array, low, high, key):
+    def binary_search(low, high, key):
         """
         BINARY SEARCH
 
@@ -612,9 +612,9 @@ def openissuegrowth(
             if start_date <= key <= end_date:
                 return mid
             elif key > end_date:
-                return binary_search(array, low, mid - 1, key)
+                return binary_search(low, mid - 1, key)
             else:
-                return binary_search(array, mid + 1, high, key)
+                return binary_search(mid + 1, high, key)
         else:
             return -1
 
@@ -649,7 +649,7 @@ def openissuegrowth(
         previous_datetime = now - datetime.timedelta(days=timedelta)
 
         # return the resultant page number (the one where we have our previous date)
-        result = binary_search(array, 1, len(array), previous_datetime)
+        result = binary_search(array[0], array[1], previous_datetime)
 
         if result == -1:
             last_page_response = None
@@ -763,7 +763,7 @@ def openissuegrowth(
                     page_issues = len(result_page)
 
             # calculates issues of all pages starting from first page to (resultant page - 1).
-            # NOTE: we already computed stars in the resultant page.
+            # NOTE: we already computed issues in the resultant page.
             if not visited_flag:
                 remaining_pages_issues = (
                     100 * (result - low_bound) if result > low_bound else 0
@@ -865,7 +865,7 @@ def contributorgrowth(
 
         # fetch commits for the last n days
         commits_url = urljoin(
-            api_prefix, f"commits?since={previous_datetime_iso}&per_page=100"
+            api_prefix, f"commits?since={previous_datetime_iso}&until={now}&per_page=100"
         )
         try:
             commits_raw = session.get(commits_url, headers=headers)

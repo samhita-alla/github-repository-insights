@@ -95,3 +95,14 @@ def contributor_growth(
         timedelta_frequency=timedelta_frequency,
     )
     return JSONResponse({"task_id": task.id})
+
+@app.post("/callback")
+def callback(request: Request, code: str):
+    print(code)
+
+@app.get("/webhook")
+async def github_webhook(request: Request):
+    payload = await request.json()
+    event_type = request.headers.get("X-Github-Event")
+    print(event_type)
+    print(payload)
