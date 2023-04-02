@@ -14,6 +14,7 @@
     "chart.js": "^4.2.1",
     "chartjs-plugin-datalabels": "^2.2.0",
     "core-js": "^3.26.1",
+    "dotenv": "^16.0.3",
     "lodash": "^4.17.21",
     "number-to-words": "^1.2.4",
     "vue": "^3.2.45",

@@ -1,11 +1,11 @@
-from fastapi import FastAPI, Request
-
-from fastapi.responses import JSONResponse
-
-from fastapi.templating import Jinja2Templates
-from fastapi.middleware.cors import CORSMiddleware
-from worker import stargrowth, openissuegrowth, contributorgrowth, celery as celery_app
 from typing import Optional
+
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.templating import Jinja2Templates
+from worker import celery as celery_app
+from worker import contributorgrowth, openissuegrowth, stargrowth
 
 app = FastAPI()
 
@@ -14,7 +14,7 @@ templates = Jinja2Templates(directory="templates")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],
+    allow_origins=["http://localhost:8080", "https://github-repo-insights-frontend.onrender.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

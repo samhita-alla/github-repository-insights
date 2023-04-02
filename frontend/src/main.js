@@ -7,6 +7,6 @@ import App from "./App.vue";
 import router from "./router";
 
 axios.defaults.withCredentials = true;
-axios.defaults.baseURL = "http://localhost:8000/"; // the FastAPI backend
+axios.defaults.baseURL = process.env.FASTAPI_URL; // the FastAPI backend
 
 Vue.createApp(App).use(router).mount("#app");

@@ -1,11 +1,9 @@
 import datetime
 import os
 import re
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 from typing import Optional
 from urllib.parse import urljoin
-
-from collections import Counter
 
 import nltk
 import numpy as np
@@ -13,14 +11,8 @@ import requests
 from celery import Celery, current_task
 from celery.signals import worker_process_init
 from requests.adapters import HTTPAdapter
-from requests.exceptions import (
-    ConnectionError,
-    ConnectTimeout,
-    HTTPError,
-    ReadTimeout,
-    RetryError,
-    Timeout,
-)
+from requests.exceptions import (ConnectionError, ConnectTimeout, HTTPError,
+                                 ReadTimeout, RetryError, Timeout)
 from urllib3.util.retry import Retry
 
 LOOP = 3
