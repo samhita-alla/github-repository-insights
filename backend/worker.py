@@ -11,8 +11,14 @@ import requests
 from celery import Celery, current_task
 from celery.signals import worker_process_init
 from requests.adapters import HTTPAdapter
-from requests.exceptions import (ConnectionError, ConnectTimeout, HTTPError,
-                                 ReadTimeout, RetryError, Timeout)
+from requests.exceptions import (
+    ConnectionError,
+    ConnectTimeout,
+    HTTPError,
+    ReadTimeout,
+    RetryError,
+    Timeout,
+)
 from urllib3.util.retry import Retry
 
 LOOP = 3
@@ -29,8 +35,7 @@ EXCEPTION_MESSAGE = "Not able to access the API; \
 NO_DATA_MESSAGE = "No data available."
 
 celery = Celery(__name__)
-celery.conf.broker_url = os.environ.get(
-    "CELERY_BROKER_URL", "redis://localhost:6379")
+celery.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379")
 celery.conf.result_backend = os.environ.get(
     "CELERY_RESULT_BACKEND", "redis://localhost:6379"
 )
@@ -102,8 +107,7 @@ def stargrowth(
     session = requests.Session()
     session.mount("https://", adapter)
 
-    assert_status_hook = lambda response, * \
-        args, **kwargs: response.raise_for_status()
+    assert_status_hook = lambda response, *args, **kwargs: response.raise_for_status()
     session.hooks["response"] = [assert_status_hook]
 
     try:
@@ -161,8 +165,7 @@ def stargrowth(
                 index = -1
                 try:
                     temp_response_one = session.get(
-                        urljoin(
-                            api_prefix, f"stargazers?per_page=100&page={mid-1}"),
+                        urljoin(api_prefix, f"stargazers?per_page=100&page={mid-1}"),
                         headers=headers,
                     )
                 except request_error_codes as e:
@@ -173,24 +176,21 @@ def stargrowth(
                 index = 0
                 try:
                     temp_response_one = session.get(
-                        urljoin(
-                            api_prefix, f"stargazers?per_page=100&page={mid}"),
+                        urljoin(api_prefix, f"stargazers?per_page=100&page={mid}"),
                         headers=headers,
                     )
                 except request_error_codes as e:
                     return EXCEPTION_MESSAGE
 
             start_date = datetime.datetime.strptime(
-                temp_response_one.json()[
-                    index]["starred_at"], "%Y-%m-%dT%H:%M:%SZ"
+                temp_response_one.json()[index]["starred_at"], "%Y-%m-%dT%H:%M:%SZ"
             )
 
             if 1 <= mid + 1 <= pages:
                 index = 0
                 try:
                     temp_response_two = session.get(
-                        urljoin(
-                            api_prefix, f"stargazers?per_page=100&page={mid+1}"),
+                        urljoin(api_prefix, f"stargazers?per_page=100&page={mid+1}"),
                         headers=headers,
                     )
                 except request_error_codes as e:
@@ -201,16 +201,14 @@ def stargrowth(
                 index = -1
                 try:
                     temp_response_two = session.get(
-                        urljoin(
-                            api_prefix, f"stargazers?per_page=100&page={mid}"),
+                        urljoin(api_prefix, f"stargazers?per_page=100&page={mid}"),
                         headers=headers,
                     )
                 except request_error_codes as e:
                     return EXCEPTION_MESSAGE
 
             end_date = datetime.datetime.strptime(
-                temp_response_two.json()[
-                    index]["starred_at"], "%Y-%m-%dT%H:%M:%SZ"
+                temp_response_two.json()[index]["starred_at"], "%Y-%m-%dT%H:%M:%SZ"
             )
 
             # check if the key lies between start_date and end_date
@@ -279,8 +277,7 @@ def stargrowth(
                 # then we need not fetch the star count because 2021-11-21T00:00:00Z isn't within the overall date range.
                 number_of_stars = (pages - 1) * 100 + last_page_star_count()
             elif visited_flag:
-                number_of_stars = remaining_stars_in_page + \
-                    ((len(array) - 1) * 100)
+                number_of_stars = remaining_stars_in_page + ((len(array) - 1) * 100)
 
             year = populate_result(now, number_of_stars, year)
             continue
@@ -291,8 +288,7 @@ def stargrowth(
             # fetch result page
             try:
                 result_page_response = session.get(
-                    urljoin(
-                        api_prefix, f"stargazers?per_page=100&page={result}"),
+                    urljoin(api_prefix, f"stargazers?per_page=100&page={result}"),
                     headers=headers,
                 )
             except request_error_codes as e:
@@ -302,8 +298,7 @@ def stargrowth(
 
             # fetch starred dates of the resultant page as a list
             starred_at = [
-                datetime.datetime.strptime(
-                    x["starred_at"], "%Y-%m-%dT%H:%M:%SZ")
+                datetime.datetime.strptime(x["starred_at"], "%Y-%m-%dT%H:%M:%SZ")
                 for x in result_page
             ]
 
@@ -316,8 +311,7 @@ def stargrowth(
                 if result != pages:
                     stars_last_page = remaining_stars_in_page
                 else:
-                    stars_last_page = -(len(starred_at) -
-                                        remaining_stars_in_page)
+                    stars_last_page = -(len(starred_at) - remaining_stars_in_page)
 
             if result_page and (
                 datetime.datetime.strptime(
@@ -367,8 +361,7 @@ def stargrowth(
             # calculate number of stars in all pages starting from (resultant page + 1) to (last page - 1).
             # NOTE: we already computed the number of stars in the last and resultant/current page.
             # implement this logic only if resultant page is not the last page.
-            remaining_pages_stars = 100 * \
-                (pages - result - 1) if pages > result else 0
+            remaining_pages_stars = 100 * (pages - result - 1) if pages > result else 0
 
             # finally, compute the total number of stars for the last 30 days
             cummulative_count = remaining_pages_stars + stars_last_page + page_stars
@@ -420,8 +413,7 @@ def openissuegrowth(
     session = requests.Session()
     session.mount("https://", adapter)
 
-    assert_status_hook = lambda response, * \
-        args, **kwargs: response.raise_for_status()
+    assert_status_hook = lambda response, *args, **kwargs: response.raise_for_status()
     session.hooks["response"] = [assert_status_hook]
 
     issues_url = urljoin(api_prefix, "issues?per_page=100")
@@ -460,8 +452,7 @@ def openissuegrowth(
                 try:
                     if pages:
                         timeline_last_page = session.get(
-                            urljoin(timeline_url,
-                                    f"?per_page=100&page={pages}"),
+                            urljoin(timeline_url, f"?per_page=100&page={pages}"),
                             headers=headers,
                         ).json()
                 except request_error_codes:
@@ -501,8 +492,7 @@ def openissuegrowth(
 
             current_task.update_state(
                 state="PROGRESS",
-                meta={"current": issue_index + 1,
-                      "total": timedelta_frequency + 50},
+                meta={"current": issue_index + 1, "total": timedelta_frequency + 50},
             )
 
     # get the number of pages if every page has 100 issues
@@ -551,8 +541,7 @@ def openissuegrowth(
                 index = -1
                 try:
                     temp_response_one = session.get(
-                        urljoin(
-                            api_prefix, f"issues?per_page=100&page={mid-1}"),
+                        urljoin(api_prefix, f"issues?per_page=100&page={mid-1}"),
                         headers=headers,
                     ).json()
                 except request_error_codes:
@@ -577,8 +566,7 @@ def openissuegrowth(
                 index = 0
                 try:
                     temp_response_two = session.get(
-                        urljoin(
-                            api_prefix, f"issues?per_page=100&page={mid+1}"),
+                        urljoin(api_prefix, f"issues?per_page=100&page={mid+1}"),
                         headers=headers,
                     ).json()
                 except request_error_codes:
@@ -651,8 +639,7 @@ def openissuegrowth(
             if array:
                 try:
                     last_page_response = session.get(
-                        urljoin(
-                            api_prefix, f"issues?per_page=100&page={array[-1]}"),
+                        urljoin(api_prefix, f"issues?per_page=100&page={array[-1]}"),
                         headers=headers,
                     ).json()
                 except request_error_codes:
@@ -668,8 +655,7 @@ def openissuegrowth(
                 if previous_datetime < datetime.datetime.strptime(
                     last_page_response[-1]["created_at"], "%Y-%m-%dT%H:%M:%SZ"
                 ):
-                    number_of_stars = (pages - 1) * 100 + \
-                        len(last_page_response)
+                    number_of_stars = (pages - 1) * 100 + len(last_page_response)
             elif visited_flag:
                 number_of_stars = remaining_issues_in_page
                 +((len(array) - 2) * 100 if len(array) > 2 else 0)
@@ -694,8 +680,7 @@ def openissuegrowth(
 
             # fetch created_at dates of the resultant page as a list
             created_at = [
-                datetime.datetime.strptime(
-                    x["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+                datetime.datetime.strptime(x["created_at"], "%Y-%m-%dT%H:%M:%SZ")
                 for x in result_page
             ]
 
@@ -825,8 +810,7 @@ def contributorgrowth(
     session = requests.Session()
     session.mount("https://", adapter)
 
-    assert_status_hook = lambda response, * \
-        args, **kwargs: response.raise_for_status()
+    assert_status_hook = lambda response, *args, **kwargs: response.raise_for_status()
     session.hooks["response"] = [assert_status_hook]
 
     previous_datetime = datetime.datetime.now()
@@ -838,13 +822,12 @@ def contributorgrowth(
         if not year:
             year = now.year
         if now.year != year:
-            result_contributors_dict[
-                f"{now.year} {now.month}/{now.day}"
-            ] = int(new_contributors)
+            result_contributors_dict[f"{now.year} {now.month}/{now.day}"] = int(
+                new_contributors
+            )
             year = now.year
         else:
-            result_contributors_dict[f"{now.month}/{now.day}"] = int(
-                new_contributors)
+            result_contributors_dict[f"{now.month}/{now.day}"] = int(new_contributors)
 
         return year
 
@@ -852,12 +835,12 @@ def contributorgrowth(
         # fetch time
         now = previous_datetime
         previous_datetime = now - datetime.timedelta(days=timedelta)
-        previous_datetime_iso = previous_datetime.strftime(
-            "%Y-%m-%dT%H:%M:%SZ")
+        previous_datetime_iso = previous_datetime.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         # fetch commits for the last n days
         commits_url = urljoin(
-            api_prefix, f"commits?since={previous_datetime_iso}&until={now}&per_page=100"
+            api_prefix,
+            f"commits?since={previous_datetime_iso}&until={now}&per_page=100",
         )
         try:
             commits_raw = session.get(commits_url, headers=headers)
@@ -885,8 +868,7 @@ def contributorgrowth(
         # count the number of commits per contributor
         contributor_count = Counter(contributor_names)
 
-        contributors_url = urljoin(
-            api_prefix, "contributors?per_page=100&anon=1")
+        contributors_url = urljoin(api_prefix, "contributors?per_page=100&anon=1")
 
         try:
             contributors_raw = session.get(contributors_url, headers=headers)
@@ -894,6 +876,7 @@ def contributorgrowth(
             return EXCEPTION_MESSAGE
 
         def get_contributors(contributors_raw, new_contributors=0):
+            print("YES")
             """
             Loop through contributors page by page and validate if the contributor is new or not.
             """
@@ -913,6 +896,7 @@ def contributorgrowth(
                         contributor_name in contributor_count
                         and contributor_count[contributor_name]
                         == contributor["contributions"]
+                        and "bot" not in contributor_name
                     ):
                         new_contributors += 1
 
@@ -938,8 +922,7 @@ def contributorgrowth(
             # second,..., nth iteration
             while "next" in contributors_raw.links.keys():
                 contributors_raw = contributors_helper(contributors_raw)
-                new_contributors = get_contributors(
-                    contributors_raw, new_contributors)
+                new_contributors = get_contributors(contributors_raw, new_contributors)
 
                 # if there are no more contributors to evaluate, then break the loop
                 if not len(contributor_count):

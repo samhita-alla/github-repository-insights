@@ -270,6 +270,7 @@ export default {
         .get(`/tasks/${taskID}`, {
           headers: {
             "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "https://github-repo-insights-frontend.onrender.com",
           },
         })
         .then((res) => {
