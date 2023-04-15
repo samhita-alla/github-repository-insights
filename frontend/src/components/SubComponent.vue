@@ -75,7 +75,11 @@
                 {{ title }} observed over {{ timeDeltaFrequency }} {{ $parent.form.timeDelta }}-day periods.
               </h3>
               <BarChartContainer :chart-component-data="chartData" :label="label"></BarChartContainer>
-              <div v-if="issueTable" id="openissuegrowth-table" class="card row justify-content-center my-5">
+              <div v-if="closedIssuesLabel">
+                <BarChartContainer :chart-component-data="chartDataClosedIssues" :label="closedIssuesLabel">
+                </BarChartContainer>
+              </div>
+              <div v-if="issueTable" id="issuegrowth-table" class="card row justify-content-center my-5">
                 <div class="flex h-screen table-wrapper">
                   <table class="table m-auto">
                     <thead class="sticky-top bg-white">
@@ -138,7 +142,9 @@ export default {
     label: { type: String, required: true },
     otherGithubApi: { type: String, required: true },
     issueTable: { type: Object, required: false },
-    timeDeltaFrequency: { type: String, required: true }
+    timeDeltaFrequency: { type: String, required: true },
+    chartDataClosedIssues: { type: [Object, null], required: false },
+    closedIssuesLabel: { type: String, required: false },
   },
   emits: ["update:otherGithubApi", "addRepoGrowth", "removeTag", "growthErrorButton"],
   data() {

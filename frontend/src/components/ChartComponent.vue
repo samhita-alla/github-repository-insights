@@ -40,14 +40,13 @@ export default {
             gridLines: {
               color: "#F5F5F5",
             },
-            scaleLabel: {
+            title: {
               display: true,
-              labelString: this.label,
-            },
+              text: this.label,
+            }
           },
           x: {
             gridLines: { display: false },
-            scaleLabel: { display: true, labelString: "Date" },
           },
         },
         plugins: {

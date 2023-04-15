@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from worker import celery as celery_app
-from worker import contributorgrowth, openissuegrowth, stargrowth
+from worker import contributorgrowth, issuegrowth, stargrowth
 
 app = FastAPI()
 
@@ -14,7 +14,10 @@ templates = Jinja2Templates(directory="templates")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080", "https://github-repo-insights-frontend.onrender.com"],
+    allow_origins=[
+        "http://localhost:8080",
+        "https://github-repo-insights-frontend.onrender.com",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,8 +64,8 @@ def star_growth(
     return JSONResponse({"task_id": task.id})
 
 
-@app.post("/openissuegrowth")
-def open_issue_growth(
+@app.post("/issuegrowth")
+def issue_growth(
     request: Request,
     github_api: str,
     access_token: Optional[str] = None,
@@ -70,7 +73,7 @@ def open_issue_growth(
     timedelta_frequency: int = 2,
     issue_stats: bool = False,
 ):
-    task = openissuegrowth.delay(
+    task = issuegrowth.delay(
         github_api=github_api,
         access_token=access_token,
         timedelta=timedelta,
@@ -96,9 +99,11 @@ def contributor_growth(
     )
     return JSONResponse({"task_id": task.id})
 
+
 @app.post("/callback")
 def callback(request: Request, code: str):
     print(code)
+
 
 @app.get("/webhook")
 async def github_webhook(request: Request):

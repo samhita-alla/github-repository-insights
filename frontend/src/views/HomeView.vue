@@ -45,19 +45,19 @@
             </label>
           </div>
           <div class="form-check form-check-inline">
-            <input id="openissuegrowth-checkbox" v-model="form.openIssueGrowthCheck" class="form-check-input"
-              type="checkbox" value="" />
-            <label class="form-check-label" for="openissuegrowth-checkbox">
-              Open issue/pull request growth
+            <input id="issuegrowth-checkbox" v-model="form.issueGrowthCheck" class="form-check-input" type="checkbox"
+              value="" />
+            <label class="form-check-label" for="issuegrowth-checkbox">
+              Issue/pull request growth
             </label>
           </div>
-          <div v-if="form.openIssueGrowthCheck" class="form-check form-check-inline">
-            <input id="openissuestats-checkbox" v-model="form.issueTable" class="form-check-input" type="checkbox"
-              value="" />
-            <label class="form-check-label" for="openissuestats-checkbox">
+          <div v-if="form.issueGrowthCheck" class="form-check form-check-inline">
+            <input id="issuestats-checkbox" v-model="form.issueTable" class="form-check-input" type="checkbox" value="" />
+            <label class="form-check-label" for="issuestats-checkbox">
               Issue stats
             </label>
           </div>
+
           <div class="form-check form-check-inline">
             <input id="contributorgrowth-checkbox" v-model="form.contributorGrowthCheck" class="form-check-input"
               type="checkbox" value="" />
@@ -67,7 +67,7 @@
           </div>
         </div>
         <button type="submit" class="btn btn-dark" :disabled="
-          starGrowthProgress || openIssueGrowthProgress || contributorGrowthProgress || !allowSubmit
+          starGrowthProgress || issueGrowthProgress || contributorGrowthProgress || !allowSubmit
         ">
           View Graph
         </button>
@@ -81,14 +81,15 @@
         @growth-error-button="starGrowthErrorButton">
       </SubComponentContainer>
       <!-- END STAR GROWTH UI -->
-      <!-- START OPEN ISSUE/PR GROWTH UI -->
-      <SubComponentContainer v-model:otherGithubApi="otherGithubApiOpenIssueGrowth" :chart-data="openIssueGrowthChartData"
-        :growth-error="openIssueGrowthError" :growth-progress="openIssueGrowthProgress" :img-src="imgSrcOpenIssueGrowth"
-        :is-add-repo="isAddRepoOpenIssueGrowth" :issue-table="issueTable" :time-delta-frequency=timeDeltaStr
-        heading="openissuegrowth" title="Open Issue/Pull Request Growth" label="Open Issues/PRs"
-        @add-repo-growth="addRepoGrowth" @growth-error-button="openIssueGrowthErrorButton" @remove-tag="removeTag">
+      <!-- START ISSUE/PR GROWTH UI -->
+      <SubComponentContainer v-model:otherGithubApi="otherGithubApiIssueGrowth" :chart-data="openIssueGrowthChartData"
+        :growth-error="issueGrowthError" :growth-progress="issueGrowthProgress" :img-src="imgSrcIssueGrowth"
+        :is-add-repo="isAddRepoIssueGrowth" :issue-table="issueTable" :time-delta-frequency=timeDeltaStr
+        heading="issuegrowth" title="Issue/Pull Request Growth" label="Open Issues/PRs"
+        :chart-data-closed-issues="closedIssueGrowthChartData" closed-issues-label="Closed Issues/PRs"
+        @add-repo-growth="addRepoGrowth" @growth-error-button="issueGrowthErrorButton" @remove-tag="removeTag">
       </SubComponentContainer>
-      <!-- END OPEN ISSUE/PR GROWTH UI -->
+      <!-- END ISSUE/PR GROWTH UI -->
       <!-- START CONTRIBUTOR GROWTH UI -->
       <SubComponentContainer v-model:otherGithubApi="otherGithubApiContributorGrowth"
         :chart-data="contributorGrowthChartData" :growth-error="contributorGrowthError"
@@ -119,26 +120,27 @@ export default {
         timeDelta: 7,
         timeDeltaFrequency: ref(''),
         starGrowthCheck: true,
-        openIssueGrowthCheck: false,
+        issueGrowthCheck: false,
         contributorGrowthCheck: false,
         issueTable: null,
       },
       timeDeltaStr: "",
       starGrowthChartData: null,
       openIssueGrowthChartData: null,
+      closedIssueGrowthChartData: null,
       contributorGrowthChartData: null,
       starGrowthProgress: null,
-      openIssueGrowthProgress: null,
+      issueGrowthProgress: null,
       contributorGrowthProgress: null,
       starGrowthError: "",
-      openIssueGrowthError: "",
+      issueGrowthError: "",
       contributorGrowthError: "",
       otherGithubApiStarGrowth: "",
-      otherGithubApiOpenIssueGrowth: "",
+      otherGithubApiIssueGrowth: "",
       otherGithubApiContributorGrowth: "",
       issueTable: null,
       isAddRepoStarGrowth: false,
-      isAddRepoOpenIssueGrowth: false,
+      isAddRepoIssueGrowth: false,
       isAddRepoContributorGrowth: false,
       toggle: false,
       backgroundColor: [
@@ -161,15 +163,16 @@ export default {
           other_github_api: "otherGithubApiStarGrowth",
           usedColors: [],
         },
-        openissuegrowth: {
-          result_id: "openissuegrowth-result",
-          progress_id: "openissuegrowth-progress",
-          progress: "openIssueGrowthProgress",
+        issuegrowth: {
+          result_id: "issuegrowth-result",
+          progress_id: "issuegrowth-progress",
+          progress: "issueGrowthProgress",
           chartdata: "openIssueGrowthChartData",
-          error: "openIssueGrowthError",
-          check: "openIssueGrowthCheck",
+          error: "issueGrowthError",
+          check: "issueGrowthCheck",
           issuetable: "issueTable",
-          other_github_api: "otherGithubApiOpenIssueGrowth",
+          closed_issues_chart_data: "closedIssueGrowthChartData",
+          other_github_api: "otherGithubApiIssueGrowth",
           usedColors: [],
         },
         contributorgrowth: {
@@ -191,8 +194,8 @@ export default {
         ? require("../assets/icons8-close.svg")
         : require("../assets/icons8-plus-+.svg");
     },
-    imgSrcOpenIssueGrowth: function () {
-      return this.isAddRepoOpenIssueGrowth
+    imgSrcIssueGrowth: function () {
+      return this.isAddRepoIssueGrowth
         ? require("../assets/icons8-close.svg")
         : require("../assets/icons8-plus-+.svg");
     },
@@ -204,7 +207,7 @@ export default {
     allowSubmit: function () {
       return (
         this.form.starGrowthCheck ||
-        this.form.openIssueGrowthCheck ||
+        this.form.issueGrowthCheck ||
         this.form.contributorGrowthCheck
       );
     },
@@ -229,7 +232,7 @@ export default {
     submit: function () {
       if (
         (this.form.starGrowthCheck && this.starGrowthChartData) ||
-        (this.form.openIssueGrowthCheck && this.openIssueGrowthChartData) ||
+        (this.form.issueGrowthCheck && this.openIssueGrowthChartData && this.closedIssueGrowthChartData) ||
         (this.form.contributorGrowthCheck && this.contributorGrowthChartData)
       ) {
         let message = "This will reset the chart(s). Continue?";
@@ -245,7 +248,7 @@ export default {
             timedelta: this.form.timeDelta,
             timedelta_frequency: this.form.timeDeltaFrequency,
           };
-          if (key == "openissuegrowth") {
+          if (key == "issuegrowth") {
             params["issue_stats"] =
               this.form[this.entity_mapping[key].issuetable];
           }
@@ -267,7 +270,7 @@ export default {
     },
     getStatus(taskID, entity, addRepo = false) {
       axios
-        .get(`/tasks/${taskID}`, {
+        .get(`/tasks/${taskID}/`, {
           headers: {
             "Content-Type": "application/json",
           },
@@ -305,6 +308,14 @@ export default {
                   borderColor: currentColor,
                   data: Object.values(res.data.task_result.graph_data),
                 });
+                if (entity == "issuegrowth") {
+                  this[this.entity_mapping[entity].closed_issues_chart_data].datasets.push({
+                    label: this[this.entity_mapping[entity].other_github_api],
+                    backgroundColor: currentColor,
+                    borderColor: currentColor,
+                    data: Object.values(res.data.task_result.graph_data_closed_issues),
+                  });
+                };
               } else {
                 var currentColor = this.backgroundColor[0]
                 this.entity_mapping[entity].usedColors = [currentColor];
@@ -318,6 +329,19 @@ export default {
                       data: Object.values(res.data.task_result.graph_data),
                     },
                   ],
+                };
+                if (entity == "issuegrowth") {
+                  this[this.entity_mapping[entity].closed_issues_chart_data] = {
+                    labels: Object.keys(res.data.task_result.graph_data_closed_issues),
+                    datasets: [
+                      {
+                        label: this.form.githubApi,
+                        backgroundColor: currentColor,
+                        borderColor: currentColor,
+                        data: Object.values(res.data.task_result.graph_data_closed_issues),
+                      },
+                    ],
+                  };
                 };
                 if (this.form[this.entity_mapping[entity].issuetable]) {
                   this[this.entity_mapping[entity].issuetable] =
@@ -343,7 +367,7 @@ export default {
           }, 1000);
         })
         .catch((err) => {
-          console.log(err);
+          console.error(err);
         });
     },
     addRepoGrowth: function (entity) {
@@ -375,9 +399,15 @@ export default {
     },
     removeTag: function (index, entity) {
       this[this.entity_mapping[entity].chartdata].datasets.splice(index, 1);
+      if (entity == "issuegrowth") {
+        this[this.entity_mapping[entity].closed_issues_chart_data].datasets.splice(index, 1);
+      }
     },
-    openIssueGrowthErrorButton: function () {
-      this.openIssueGrowthError = false;
+    issueGrowthErrorButton: function () {
+      this.issueGrowthError = false;
+    },
+    closedIssueGrowthErrorButton: function () {
+      this.closedIssueGrowthError = false;
     },
     starGrowthErrorButton: function () {
       this.starGrowthError = false;

@@ -262,15 +262,25 @@ def stargrowth(
         previous_datetime = now - datetime.timedelta(days=timedelta)
 
         # return the resultant page number (the one where we have our previous date)
-        result = binary_search(1, len(array), previous_datetime)
+        if array:
+            result = binary_search(1, len(array), previous_datetime)
+        else:
+            result = -1
 
         if result == -1:
             number_of_stars = 0
 
             # if the "result" was positive earlier, i.e., if previous_date lies within the stars' date range,
             # we need not fetch the total number of stars because remaining_stars_in_page would be populated already.
-            if not visited_flag and previous_datetime < datetime.datetime.strptime(
-                global_start_date, "%Y-%m-%dT%H:%M:%SZ"
+            if (
+                not visited_flag
+                and array
+                and (
+                    previous_datetime
+                    < datetime.datetime.strptime(
+                        global_start_date, "%Y-%m-%dT%H:%M:%SZ"
+                    )
+                )
             ):
                 # If the previous date is before the first page's start date, then we need to fetch the total number of stars
                 # For example: if the first page's start date is 2021-11-14T00:00:00Z, and our previous date is 2021-11-21T00:00:00Z,
@@ -278,6 +288,8 @@ def stargrowth(
                 number_of_stars = (pages - 1) * 100 + last_page_star_count()
             elif visited_flag:
                 number_of_stars = remaining_stars_in_page + ((len(array) - 1) * 100)
+                visited_flag = False
+                array = []
 
             year = populate_result(now, number_of_stars, year)
             continue
@@ -382,8 +394,8 @@ def stargrowth(
     return {"graph_data": OrderedDict(reversed(list(result_stars_dict.items())))}
 
 
-@celery.task(name="openissuegrowth")
-def openissuegrowth(
+@celery.task(name="issuegrowth")
+def issuegrowth(
     github_api: str,
     access_token: Optional[str] = None,
     timedelta: int = 7,
@@ -417,10 +429,17 @@ def openissuegrowth(
     session.hooks["response"] = [assert_status_hook]
 
     issues_url = urljoin(api_prefix, "issues?per_page=100")
+    closed_issues_url = urljoin(api_prefix, "issues?per_page=100&state=closed")
 
     response = None
     try:
         response = session.get(issues_url, headers=headers)
+    except request_error_codes:
+        return EXCEPTION_MESSAGE
+
+    closed_issues_response = None
+    try:
+        closed_issues_response = session.get(closed_issues_url, headers=headers)
     except request_error_codes:
         return EXCEPTION_MESSAGE
 
@@ -502,7 +521,13 @@ def openissuegrowth(
         match = pattern.match(response.links["last"]["url"])
         pages = int(match.group(2))
 
-    def binary_search(low, high, key):
+    closed_issues_pages = 1 if closed_issues_response.json() else 0
+    pattern = re.compile("(.*)page=(.*)$")
+    if "last" in closed_issues_response.links.keys():
+        match = pattern.match(closed_issues_response.links["last"]["url"])
+        closed_issues_pages = int(match.group(2))
+
+    def binary_search(low, high, key, state):
         """
         BINARY SEARCH
 
@@ -541,7 +566,10 @@ def openissuegrowth(
                 index = -1
                 try:
                     temp_response_one = session.get(
-                        urljoin(api_prefix, f"issues?per_page=100&page={mid-1}"),
+                        urljoin(
+                            api_prefix,
+                            f"issues?per_page=100&page={mid-1}&state={state}",
+                        ),
                         headers=headers,
                     ).json()
                 except request_error_codes:
@@ -552,7 +580,9 @@ def openissuegrowth(
                 index = 0
                 try:
                     temp_response_one = session.get(
-                        urljoin(api_prefix, f"issues?per_page=100&page={mid}"),
+                        urljoin(
+                            api_prefix, f"issues?per_page=100&page={mid}&state={state}"
+                        ),
                         headers=headers,
                     ).json()
                 except request_error_codes:
@@ -566,7 +596,10 @@ def openissuegrowth(
                 index = 0
                 try:
                     temp_response_two = session.get(
-                        urljoin(api_prefix, f"issues?per_page=100&page={mid+1}"),
+                        urljoin(
+                            api_prefix,
+                            f"issues?per_page=100&page={mid+1}&state={state}",
+                        ),
                         headers=headers,
                     ).json()
                 except request_error_codes:
@@ -578,7 +611,9 @@ def openissuegrowth(
                 index = -1
                 try:
                     temp_response_two = session.get(
-                        urljoin(api_prefix, f"issues?per_page=100&page={mid}"),
+                        urljoin(
+                            api_prefix, f"issues?per_page=100&page={mid}&state={state}"
+                        ),
                         headers=headers,
                     ).json()
                 except request_error_codes:
@@ -592,193 +627,217 @@ def openissuegrowth(
             if start_date <= key <= end_date:
                 return mid
             elif key > end_date:
-                return binary_search(low, mid - 1, key)
+                return binary_search(low, mid - 1, key, state)
             else:
-                return binary_search(mid + 1, high, key)
+                return binary_search(mid + 1, high, key, state)
         else:
             return -1
 
-    if pages == 0:
+    if pages == 0 and closed_issues_pages == 0:
         return NO_DATA_MESSAGE
 
-    # loop through pages -- create an array
-    array = list(range(1, pages + 1))
-
-    result_issues_dict = OrderedDict()
+    result_issues_dict = {"open": OrderedDict(), "closed": OrderedDict()}
     year = None
 
-    def populate_result(now, cummulative_count, year=None):
+    def populate_result(now, cummulative_count, state, year=None):
         if not year:
             year = now.year
         if now.year != year:
-            result_issues_dict[f"{now.year} {now.month}/{now.day}"] = cummulative_count
+            result_issues_dict[state][
+                f"{now.year} {now.strftime('%b')} {now.day}"
+            ] = cummulative_count
             year = now.year
         else:
-            result_issues_dict[f"{now.month}/{now.day}"] = cummulative_count
+            result_issues_dict[state][f"{now.strftime('%b')} {now.day}"] = cummulative_count
 
         return year
 
-    previous_datetime = datetime.datetime.now()
-    remaining_issues_in_page = 0
-    low_bound = 1
-    visited_flag = False
+    time_now = datetime.datetime.now()
 
-    for i, _ in enumerate(range(timedelta_frequency)):
-        # fetch time
-        now = previous_datetime
-        previous_datetime = now - datetime.timedelta(days=timedelta)
+    j = 0
+    for (
+        previous_datetime,
+        array,
+        state,
+        visited_flag,
+        low_bound,
+        remaining_issues_in_page,
+    ) in [
+        (time_now, list(range(1, pages + 1)), "open", False, 1, 0),
+        (time_now, list(range(1, closed_issues_pages + 1)), "closed", False, 1, 0),
+    ]:
+        for i, _ in enumerate(range(timedelta_frequency)):
+            j += 1
+            # fetch time
+            now = previous_datetime
+            previous_datetime = now - datetime.timedelta(days=timedelta)
 
-        # return the resultant page number (the one where we have our previous date)
-        result = binary_search(array[0], array[1], previous_datetime)
-
-        if result == -1:
-            last_page_response = None
-            number_of_stars = 0
-
-            # fetch last page
+            # return the resultant page number (the one where we have our previous date)
             if array:
+                result = binary_search(array[0], array[-1], previous_datetime, state)
+            else:
+                result = -1
+
+            if result == -1:
+                last_page_response = None
+                number_of_issues = 0
+
+                # fetch last page
+                if array:
+                    try:
+                        last_page_response = session.get(
+                            urljoin(
+                                api_prefix,
+                                f"issues?per_page=100&page={array[-1]}&state={state}",
+                            ),
+                            headers=headers,
+                        ).json()
+                    except request_error_codes:
+                        return EXCEPTION_MESSAGE
+
+                # if the "result" was positive earlier, i.e., if previous_date lies within the issues' date range,
+                # then we need not fetch the total number of issues because remaining_issues_in_page would be populated already.
+                if (not visited_flag) and last_page_response:
+                    # If previous datetime is less than the last date of the last page, i.e., the start date,
+                    # then we need to fetch the total number of issues.
+                    # For example: if the last page's last date is 2021-11-14T00:00:00Z, and our previous date is 2021-11-21T00:00:00Z,
+                    # then we need not fetch the issue count because 2021-11-21T00:00:00Z isn't within the overall date range.
+                    if previous_datetime < datetime.datetime.strptime(
+                        last_page_response[-1]["created_at"], "%Y-%m-%dT%H:%M:%SZ"
+                    ):
+                        number_of_issues = (pages - 1) * 100 + len(last_page_response)
+                elif visited_flag:
+                    number_of_issues = remaining_issues_in_page
+                    +((len(array) - 2) * 100 if len(array) > 2 else 0)
+                    +(len(last_page_response) if len(array) >= 2 else 0)
+                    visited_flag = False
+                    array = []
+
+                # if the previous date isn't present in the list of dates
+                year = populate_result(
+                    now,
+                    number_of_issues,
+                    state,
+                    year,
+                )
+                continue
+            elif isinstance(result, int):
+                # fetch result page
                 try:
-                    last_page_response = session.get(
-                        urljoin(api_prefix, f"issues?per_page=100&page={array[-1]}"),
+                    result_page = session.get(
+                        urljoin(
+                            api_prefix,
+                            f"issues?per_page=100&page={result}&state={state}",
+                        ),
                         headers=headers,
                     ).json()
                 except request_error_codes:
                     return EXCEPTION_MESSAGE
 
-            # if the "result" was positive earlier, i.e., if previous_date lies within the issues' date range,
-            # then we need not fetch the total number of issues because remaining_issues_in_page would be populated already.
-            if (not visited_flag) and last_page_response:
-                # If previous datetime is less than the last date of the last page, i.e., the start date,
-                # then we need to fetch the total number of issues.
-                # For example: if the last page's last date is 2021-11-14T00:00:00Z, and our previous date is 2021-11-21T00:00:00Z,
-                # then we need not fetch the issue count because 2021-11-21T00:00:00Z isn't within the overall date range.
-                if previous_datetime < datetime.datetime.strptime(
-                    last_page_response[-1]["created_at"], "%Y-%m-%dT%H:%M:%SZ"
+                # fetch created_at dates of the resultant page as a list
+                created_at = [
+                    datetime.datetime.strptime(x["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+                    for x in result_page
+                ]
+
+                if visited_flag:
+                    if low_bound == result:
+                        remaining_issues_in_page = -(
+                            len(result_page) - remaining_issues_in_page
+                        )
+
+                if result_page and (
+                    datetime.datetime.strptime(
+                        result_page[-1]["created_at"], "%Y-%m-%dT%H:%M:%SZ"
+                    )
+                    <= previous_datetime
+                    <= datetime.datetime.strptime(
+                        result_page[0]["created_at"], "%Y-%m-%dT%H:%M:%SZ"
+                    )
                 ):
-                    number_of_stars = (pages - 1) * 100 + len(last_page_response)
-            elif visited_flag:
-                number_of_stars = remaining_issues_in_page
-                +((len(array) - 2) * 100 if len(array) > 2 else 0)
-                +(len(last_page_response) if len(array) >= 2 else 0)
+                    # find the nearest date to the previous month's date from created_at dates
+                    index = int(find_nearest(created_at, previous_datetime))
 
-            # if the previous date isn't present in the list of dates
-            year = populate_result(
-                now,
-                number_of_stars,
-                year,
-            )
-            continue
-        elif isinstance(result, int):
-            # fetch result page
-            try:
-                result_page = session.get(
-                    urljoin(api_prefix, f"issues?per_page=100&page={result}"),
-                    headers=headers,
-                ).json()
-            except request_error_codes:
-                return EXCEPTION_MESSAGE
+                    if created_at[index] >= previous_datetime:
+                        """
+                        If the resultant date is greater than or equal to previous month's date, consider the resultant date as well.
+                        For example, if the date we're searching for is 2021-11-19T00:00:00Z. Assume it isn't present in the issues result but we have 2021-11-20T00:00:00Z and 2021-11-18T00:00:00Z.
+                        The date we need to count our issues from starts from the date 2021-11-20T00:00:00Z but not from 2021-11-18T00:00:00Z.
+                        If 2021-11-20T00:00:00Z is what we are retrieving, we blindly go by the logic: index + 1.
+                        (if we have 100 issues and the date we retrieved is at index 5
+                        (note that 5 if five steps away from the most recent issue), then it is 5 + 1 = 6 issues).
+                        NOTE: since index starts from 0, we need to add 1 to the index.
+                        """
+                        page_issues = index + 1
+                    else:
+                        """
+                        else part handles the case when the nearest resultant date is less than the previous date.
+                        In this case, we shouldn't consider the nearest date, hence we wouldn't add 1 to the index (this automically deletes one entry ~ the nearest date entry).
+                        """
+                        page_issues = index
 
-            # fetch created_at dates of the resultant page as a list
-            created_at = [
-                datetime.datetime.strptime(x["created_at"], "%Y-%m-%dT%H:%M:%SZ")
-                for x in result_page
-            ]
+                elif result_page:
+                    """
+                    else part handles the case when the previous date is not present in the result page.
+                    This means that the date is present in two possible ranges:
+                    * The first range is from the last date of the previous page to the first date of the resultant page.
+                    * The second range is from the last date of the resultant page to the first date of the successive page.
+                    """
+                    if previous_datetime > result_page[0]["created_at"]:
+                        """
+                        If the previous month's date is greater than the start date of the current page, we do not consider stars in the current page.
+                        We only consider stars in the successive page as computed below.
+                        """
+                        page_issues = 0
+                    else:
+                        """
+                        We blindly consider all stars of the current page if the previous date (the date we searched for) is less than the end date of the current page.
+                        """
+                        page_issues = len(result_page)
 
-            if visited_flag:
-                if low_bound == result:
-                    remaining_issues_in_page = -(
-                        len(result_page) - remaining_issues_in_page
+                # calculates issues of all pages starting from first page to (resultant page - 1).
+                # NOTE: we already computed issues in the resultant page.
+                if not visited_flag:
+                    remaining_pages_issues = (
+                        100 * (result - low_bound) if result > low_bound else 0
+                    )
+                else:
+                    remaining_pages_issues = (
+                        100 * (result - low_bound - 1) if result > low_bound else 0
                     )
 
-            if result_page and (
-                datetime.datetime.strptime(
-                    result_page[-1]["created_at"], "%Y-%m-%dT%H:%M:%SZ"
+                # finally, compute the total number of issues in the last x days
+                cummulative_count = (
+                    remaining_pages_issues + page_issues + remaining_issues_in_page
                 )
-                <= previous_datetime
-                <= datetime.datetime.strptime(
-                    result_page[0]["created_at"], "%Y-%m-%dT%H:%M:%SZ"
-                )
-            ):
-                # find the nearest date to the previous month's date from created_at dates
-                index = int(find_nearest(created_at, previous_datetime))
 
-                if created_at[index] >= previous_datetime:
-                    """
-                    If the resultant date is greater than or equal to previous month's date, consider the resultant date as well.
-                    For example, if the date we're searching for is 2021-11-19T00:00:00Z. Assume it isn't present in the issues result but we have 2021-11-20T00:00:00Z and 2021-11-18T00:00:00Z.
-                    The date we need to count our issues from starts from the date 2021-11-20T00:00:00Z but not from 2021-11-18T00:00:00Z.
-                    If 2021-11-20T00:00:00Z is what we are retrieving, we blindly go by the logic: index + 1.
-                    (if we have 100 issues and the date we retrieved is at index 5
-                    (note that 5 if five steps away from the most recent issue), then it is 5 + 1 = 6 issues).
-                    NOTE: since index starts from 0, we need to add 1 to the index.
-                    """
-                    page_issues = index + 1
-                else:
-                    """
-                    else part handles the case when the nearest resultant date is less than the previous date.
-                    In this case, we shouldn't consider the nearest date, hence we wouldn't add 1 to the index (this automically deletes one entry ~ the nearest date entry).
-                    """
-                    page_issues = index
+                remaining_issues_in_page = len(result_page) - page_issues
 
-            elif result_page:
-                """
-                else part handles the case when the previous date is not present in the result page.
-                This means that the date is present in two possible ranges:
-                * The first range is from the last date of the previous page to the first date of the resultant page.
-                * The second range is from the last date of the resultant page to the first date of the successive page.
-                """
-                if previous_datetime > result_page[0]["created_at"]:
-                    """
-                    If the previous month's date is greater than the start date of the current page, we do not consider stars in the current page.
-                    We only consider stars in the successive page as computed below.
-                    """
-                    page_issues = 0
-                else:
-                    """
-                    We blindly consider all stars of the current page if the previous date (the date we searched for) is less than the end date of the current page.
-                    """
-                    page_issues = len(result_page)
+                # flag to indicate whether there has been a "result" hit
+                visited_flag = True
 
-            # calculates issues of all pages starting from first page to (resultant page - 1).
-            # NOTE: we already computed issues in the resultant page.
-            if not visited_flag:
-                remaining_pages_issues = (
-                    100 * (result - low_bound) if result > low_bound else 0
-                )
+                year = populate_result(now, cummulative_count, state, year)
             else:
-                remaining_pages_issues = (
-                    100 * (result - low_bound - 1) if result > low_bound else 0
-                )
+                # ERROR
+                break
 
-            # finally, compute the total number of issues in the last x days
-            cummulative_count = (
-                remaining_pages_issues + page_issues + remaining_issues_in_page
+            current_task.update_state(
+                state="PROGRESS",
+                meta={
+                    "current": j + no_of_issues,
+                    "total": timedelta_frequency * 2 + no_of_issues,
+                },
             )
 
-            remaining_issues_in_page = len(result_page) - page_issues
-
-            # flag to indicate whether there has been a "result" hit
-            visited_flag = True
-
-            year = populate_result(now, cummulative_count, year)
-        else:
-            # ERROR
-            break
-
-        current_task.update_state(
-            state="PROGRESS",
-            meta={
-                "current": i + 1 + no_of_issues,
-                "total": timedelta_frequency + no_of_issues,
-            },
-        )
-
-        # unset & set variables
-        low_bound = result
-        array = list(range(low_bound, pages + 1))
+            # unset & set variables
+            low_bound = result
+            array = list(range(low_bound, pages + 1))
 
     return {
-        "graph_data": OrderedDict(reversed(list(result_issues_dict.items()))),
+        "graph_data": OrderedDict(reversed(list(result_issues_dict["open"].items()))),
+        "graph_data_closed_issues": OrderedDict(
+            reversed(list(result_issues_dict["closed"].items()))
+        ),
         "issue_map": issue_map,
     }
 
