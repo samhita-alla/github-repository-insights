@@ -39,7 +39,7 @@ celery.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:
 celery.conf.result_backend = os.environ.get(
     "CELERY_RESULT_BACKEND", "redis://localhost:6379"
 )
-celery.conf.worker_proc_alive_timeout = 10
+celery.conf.worker_proc_alive_timeout = 60
 
 
 def dialogue_act_features(post):
