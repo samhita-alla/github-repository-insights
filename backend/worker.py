@@ -943,7 +943,6 @@ def contributorgrowth(
             return EXCEPTION_MESSAGE
 
         def get_contributors(contributors_raw, new_contributors=0):
-            print("YES")
             """
             Loop through contributors page by page and validate if the contributor is new or not.
             """
