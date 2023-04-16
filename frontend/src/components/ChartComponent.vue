@@ -36,6 +36,7 @@ export default {
           y: {
             ticks: {
               beginAtZero: true,
+              precision: 0,
             },
             gridLines: {
               color: "#F5F5F5",

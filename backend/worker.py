@@ -234,10 +234,12 @@ def stargrowth(
         if not year:
             year = now.year
         if now.year != year:
-            result_stars_dict[f"{now.year} {now.month}/{now.day}"] = cummulative_count
+            result_stars_dict[
+                f"{now.year} {now.strftime('%b')} {now.day}"
+            ] = cummulative_count
             year = now.year
         else:
-            result_stars_dict[f"{now.month}/{now.day}"] = cummulative_count
+            result_stars_dict[f"{now.strftime('%b')} {now.day}"] = cummulative_count
 
         return year
 
@@ -648,7 +650,9 @@ def issuegrowth(
             ] = cummulative_count
             year = now.year
         else:
-            result_issues_dict[state][f"{now.strftime('%b')} {now.day}"] = cummulative_count
+            result_issues_dict[state][
+                f"{now.strftime('%b')} {now.day}"
+            ] = cummulative_count
 
         return year
 
@@ -666,7 +670,7 @@ def issuegrowth(
         (time_now, list(range(1, pages + 1)), "open", False, 1, 0),
         (time_now, list(range(1, closed_issues_pages + 1)), "closed", False, 1, 0),
     ]:
-        for i, _ in enumerate(range(timedelta_frequency)):
+        for _ in range(timedelta_frequency):
             j += 1
             # fetch time
             now = previous_datetime
@@ -783,7 +787,9 @@ def issuegrowth(
                     * The first range is from the last date of the previous page to the first date of the resultant page.
                     * The second range is from the last date of the resultant page to the first date of the successive page.
                     """
-                    if previous_datetime > result_page[0]["created_at"]:
+                    if previous_datetime > datetime.datetime.strptime(
+                        result_page[0]["created_at"], "%Y-%m-%dT%H:%M:%SZ"
+                    ):
                         """
                         If the previous month's date is greater than the start date of the current page, we do not consider stars in the current page.
                         We only consider stars in the successive page as computed below.
@@ -881,12 +887,14 @@ def contributorgrowth(
         if not year:
             year = now.year
         if now.year != year:
-            result_contributors_dict[f"{now.year} {now.month}/{now.day}"] = int(
-                new_contributors
-            )
+            result_contributors_dict[
+                f"{now.year} {now.strftime('%b')} {now.day}"
+            ] = int(new_contributors)
             year = now.year
         else:
-            result_contributors_dict[f"{now.month}/{now.day}"] = int(new_contributors)
+            result_contributors_dict[f"{now.strftime('%b')} {now.day}"] = int(
+                new_contributors
+            )
 
         return year
 
