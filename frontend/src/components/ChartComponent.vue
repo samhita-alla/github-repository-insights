@@ -1,5 +1,5 @@
 <template>
-  <Bar :data="chartData" :style="myStyles" :options="chartOptions" :key="watchKeyChange" />
+  <Bar :key="watchKeyChange" :data="chartData" :style="myStyles" :options="chartOptions" />
 </template>
 
 <script>

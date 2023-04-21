@@ -64,8 +64,8 @@ def star_growth(
     return JSONResponse({"task_id": task.id})
 
 
-@app.post("/issuegrowth")
-def issue_growth(
+@app.post("/openissuegrowth")
+def open_issue_growth(
     request: Request,
     github_api: str,
     access_token: Optional[str] = None,
@@ -79,6 +79,25 @@ def issue_growth(
         timedelta=timedelta,
         timedelta_frequency=timedelta_frequency,
         issue_stats=issue_stats,
+    )
+    return JSONResponse({"task_id": task.id})
+
+
+@app.post("/closedissuegrowth")
+def closed_issue_growth(
+    request: Request,
+    github_api: str,
+    access_token: Optional[str] = None,
+    timedelta: int = 7,
+    timedelta_frequency: int = 2,
+    issue_stats: bool = False,
+):
+    task = issuegrowth.delay(
+        github_api=github_api,
+        access_token=access_token,
+        timedelta=timedelta,
+        timedelta_frequency=timedelta_frequency,
+        state="closed",
     )
     return JSONResponse({"task_id": task.id})
 
