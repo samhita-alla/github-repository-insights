@@ -1,11 +1,16 @@
 from typing import Optional
 
+import requests
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from worker import celery as celery_app
 from worker import contributorgrowth, issuegrowth, stargrowth
+import os
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -25,7 +30,7 @@ app.add_middleware(
 
 
 @app.get("/")
-def home():
+async def home():
     return "Hello, World!"
 
 
@@ -48,7 +53,7 @@ def get_status(task_id: str):
 
 
 @app.post("/stargrowth")
-def star_growth(
+async def star_growth(
     request: Request,
     github_api: str,
     access_token: Optional[str] = None,
@@ -65,7 +70,7 @@ def star_growth(
 
 
 @app.post("/openissuegrowth")
-def open_issue_growth(
+async def open_issue_growth(
     request: Request,
     github_api: str,
     access_token: Optional[str] = None,
@@ -84,7 +89,7 @@ def open_issue_growth(
 
 
 @app.post("/closedissuegrowth")
-def closed_issue_growth(
+async def closed_issue_growth(
     request: Request,
     github_api: str,
     access_token: Optional[str] = None,
@@ -103,7 +108,7 @@ def closed_issue_growth(
 
 
 @app.post("/contributorgrowth")
-def contributor_growth(
+async def contributor_growth(
     request: Request,
     github_api: str,
     access_token: Optional[str] = None,
@@ -119,14 +124,15 @@ def contributor_growth(
     return JSONResponse({"task_id": task.id})
 
 
-@app.post("/callback")
-def callback(request: Request, code: str):
+@app.get("/callback")
+async def callback(request: Request, code: str):
     print(code)
-
-
-@app.get("/webhook")
-async def github_webhook(request: Request):
-    payload = await request.json()
-    event_type = request.headers.get("X-Github-Event")
-    print(event_type)
-    print(payload)
+    response = requests.post(
+        "https://github.com/login/oauth/access_token",
+        data={
+            "code": code,
+            "client_id": os.getenv("VUE_APP_GITHUB_CLIENT_ID"),
+            "client_secret": os.getenv("8b001c073e4545d8cbadfce330699a89f65bdc53"),
+        },
+    )
+    print(response)
