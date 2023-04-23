@@ -153,6 +153,8 @@
 import axios from "axios";
 import SubComponentContainer from "../components/SubComponent.vue";
 import { ref } from "vue";
+import { useCookies } from "vue3-cookies";
+const { cookies } = useCookies();
 var converter = require("number-to-words");
 
 export default {
@@ -283,7 +285,7 @@ export default {
   watch: {
     form: {
       handler: function () {
-        console.log(this.$cookies.get("access_token"));
+        console.log(cookies.get("access_token"));
         localStorage.setItem("form", JSON.stringify(this.form));
         if (this.form.timeDeltaFrequency) {
           this.timeDeltaStr = converter.toWords(this.form.timeDeltaFrequency);
