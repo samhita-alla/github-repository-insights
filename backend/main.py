@@ -172,16 +172,14 @@ def callback(code: str, response: Response):
 
 
 @app.get("/githubrefreshtoken")
-def github_refresh_token(
-    request: Request, response: Response, refresh_token: str = Cookie(None)
-):
+def github_refresh_token(response: Response, refreshtoken: str = Cookie(None)):
     gh_response = requests.post(
         "https://github.com/login/oauth/access_token",
         params={
             "grant_type": "refresh_token",
             "client_id": os.getenv("GITHUB_CLIENT_ID"),
             "client_secret": os.getenv("GITHUB_CLIENT_SECRET"),
-            "refresh_token": refresh_token,
+            "refresh_token": refreshtoken,
         },
     )
     return callback_helper(response=response, gh_response=gh_response)
