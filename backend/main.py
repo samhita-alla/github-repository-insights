@@ -78,7 +78,8 @@ def fetch_token(response, refreshtoken, accesstoken):
 
 
 @app.get("/")
-def home():
+def home(test: Optional[str] = Cookie(default=None)):
+    print(test)
     return "Hello, World!"
 
 
