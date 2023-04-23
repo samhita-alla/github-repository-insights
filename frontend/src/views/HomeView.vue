@@ -55,11 +55,6 @@
           <small class="form-text text-muted">GitHub Repo has to be of the format {organization/repo}.</small>
         </div>
         <div class="form-group mb-3">
-          <label for="access-token">Access Token</label>
-          <input id="access-token" v-model="form.accessToken" type="text" class="form-control" />
-          <small class="form-text text-muted">Useful to circumvent the rate limit issue.</small>
-        </div>
-        <div class="form-group mb-3">
           <label for="timedelta">Timedelta (<span id="timedelta-rangeval">7</span>)</label>
           <input id="timedelta" v-model="form.timeDelta" type="range" class="form-range" min="1" max="30"
             oninput="document.getElementById('timedelta-rangeval').innerText = document.getElementById('timedelta').value" />
@@ -153,8 +148,7 @@
 import axios from "axios";
 import SubComponentContainer from "../components/SubComponent.vue";
 import { ref } from "vue";
-import { useCookies } from "vue3-cookies";
-const { cookies } = useCookies();
+
 var converter = require("number-to-words");
 
 export default {
@@ -164,7 +158,6 @@ export default {
     return {
       form: {
         githubApi: "flyteorg/flyte",
-        accessToken: "",
         timeDelta: 7,
         timeDeltaFrequency: ref(''),
         starGrowthCheck: true,
@@ -285,7 +278,6 @@ export default {
   watch: {
     form: {
       handler: function () {
-        console.log(cookies.get("access_token"));
         localStorage.setItem("form", JSON.stringify(this.form));
         if (this.form.timeDeltaFrequency) {
           this.timeDeltaStr = converter.toWords(this.form.timeDeltaFrequency);
@@ -293,13 +285,13 @@ export default {
       },
       deep: true,
     },
-    gitHubState: {
-      handler: function () {
-        console.log(gitHubState);
-        localStorage.setItem("gitHubState", this.gitHubState);
-      },
-      deep: true,
-    },
+    // gitHubState: {
+    //   handler: function () {
+    //     console.log(gitHubState);
+    //     localStorage.setItem("gitHubState", this.gitHubState);
+    //   },
+    //   deep: true,
+    // },
   },
   mounted() {
     this.form = JSON.parse(localStorage.getItem("form")) || this.form;
@@ -325,7 +317,6 @@ export default {
         if (this.form[this.entity_mapping[key].check]) {
           var params = {
             github_api: this.form.githubApi,
-            access_token: this.form.accessToken,
             timedelta: this.form.timeDelta,
             timedelta_frequency: this.form.timeDeltaFrequency,
           };
@@ -443,7 +434,6 @@ export default {
         .post("/" + entity, null, {
           params: {
             github_api: this[this.entity_mapping[entity].other_github_api],
-            access_token: this.form.accessToken,
             timedelta: this.form.timeDelta,
             timedelta_frequency: this.form.timeDeltaFrequency,
           },

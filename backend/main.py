@@ -125,7 +125,7 @@ async def contributor_growth(
     return JSONResponse({"task_id": task.id})
 
 
-def callback_helper(response, gh_response):
+def callback_helper(response: Response, gh_response):
     pattern = r"access_token=([\w-]+)&expires_in=(\d+)&refresh_token=([\w-]+)&refresh_token_expires_in=(\d+)"
 
     match = re.search(pattern, gh_response.text)
@@ -139,13 +139,20 @@ def callback_helper(response, gh_response):
         return "API response isn't as expected."
 
     response.set_cookie(
-        key="access_token", value=access_token, httponly=True, expires=expires_in
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        expires=expires_in,
+        secure=True,
+        samesite="strict",
     )
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
         expires=refresh_token_expires_in,
+        secure=True,
+        samesite="strict",
     )
 
     html_content = """
