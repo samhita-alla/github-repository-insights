@@ -1,15 +1,15 @@
+import os
+import re
 from typing import Optional
 
 import requests
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, Cookie
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from worker import celery as celery_app
 from worker import contributorgrowth, issuegrowth, stargrowth
-import os
-import re
 
 load_dotenv()
 
@@ -57,7 +57,7 @@ def get_status(task_id: str):
 async def star_growth(
     request: Request,
     github_api: str,
-    access_token: Optional[str] = None,
+    access_token: str = Cookie(None),
     timedelta: int = 7,
     timedelta_frequency: int = 2,
 ):
@@ -74,7 +74,7 @@ async def star_growth(
 async def open_issue_growth(
     request: Request,
     github_api: str,
-    access_token: Optional[str] = None,
+    access_token: str = Cookie(None),
     timedelta: int = 7,
     timedelta_frequency: int = 2,
     issue_stats: bool = False,
@@ -93,7 +93,7 @@ async def open_issue_growth(
 async def closed_issue_growth(
     request: Request,
     github_api: str,
-    access_token: Optional[str] = None,
+    access_token: str = Cookie(None),
     timedelta: int = 7,
     timedelta_frequency: int = 2,
     issue_stats: bool = False,
@@ -112,7 +112,7 @@ async def closed_issue_growth(
 async def contributor_growth(
     request: Request,
     github_api: str,
-    access_token: Optional[str] = None,
+    access_token: str = Cookie(None),
     timedelta: int = 7,
     timedelta_frequency: int = 2,
 ):
@@ -125,16 +125,37 @@ async def contributor_growth(
     return JSONResponse({"task_id": task.id})
 
 
-# @app.get("/githubaccesstoken")
-# def github_access_token(request: Request, client_id: str, state: str):
-#     response = requests.post(
-#         "https://github.com/login/oauth/authorize",
-#         params={
-#             "client_id": client_id,
-#             "state": state,
-#         },
-#     )
-#     print(response.text)
+def callback_helper(response, gh_response):
+    pattern = r"access_token=([\w-]+)&expires_in=(\d+)&refresh_token=([\w-]+)&refresh_token_expires_in=(\d+)"
+
+    match = re.search(pattern, gh_response.text)
+
+    if match:
+        access_token = match.group(1)
+        expires_in = int(match.group(2))
+        refresh_token = match.group(3)
+        refresh_token_expires_in = int(match.group(4))
+    else:
+        return "API response isn't as expected."
+
+    response.set_cookie(
+        key="access_token", value=access_token, httponly=True, expires=expires_in
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        expires=refresh_token_expires_in,
+    )
+
+    html_content = """
+    <html>
+        <body>
+            <h1>You may now close this window.</h1>
+        </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content, status_code=200)
 
 
 @app.get("/callback")
@@ -147,9 +168,20 @@ def callback(request: Request, code: str, response: Response):
             "client_secret": os.getenv("GITHUB_CLIENT_SECRET"),
         },
     )
-    access_token = re.search(r"access_token=(.*?)&", gh_response.text).group(1)
-    refresh_token = re.search(r"refresh_token=(.*?)&", gh_response.text).group(1)
+    return callback_helper(response=response, gh_response=gh_response)
 
-    response.set_cookie(key="access_token", value=access_token, httponly=True)
-    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True)
-    return True
+
+@app.get("/githubrefreshtoken")
+def github_refresh_token(
+    request: Request, response: Response, refresh_token: str = Cookie(None)
+):
+    gh_response = requests.post(
+        "https://github.com/login/oauth/access_token",
+        params={
+            "grant_type": "refresh_token",
+            "client_id": os.getenv("GITHUB_CLIENT_ID"),
+            "client_secret": os.getenv("GITHUB_CLIENT_SECRET"),
+            "refresh_token": refresh_token,
+        },
+    )
+    return callback_helper(response=response, gh_response=gh_response)
