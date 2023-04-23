@@ -112,7 +112,7 @@ def get_status(task_id: str):
     return JSONResponse(result)
 
 
-@app.post("/stargrowth")
+@app.get("/stargrowth")
 def star_growth(
     github_api: str,
     response: Response,
@@ -172,7 +172,7 @@ def closed_issue_growth(
     return JSONResponse({"task_id": task.id})
 
 
-@app.post("/contributorgrowth")
+@app.get("/contributorgrowth")
 def contributor_growth(
     github_api: str,
     response: Response,
