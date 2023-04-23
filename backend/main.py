@@ -57,13 +57,13 @@ def get_status(task_id: str):
 async def star_growth(
     request: Request,
     github_api: str,
-    access_token: str = Cookie(None),
+    accesstoken: str = Cookie(None),
     timedelta: int = 7,
     timedelta_frequency: int = 2,
 ):
     task = stargrowth.delay(
         github_api=github_api,
-        access_token=access_token,
+        access_token=accesstoken,
         timedelta=timedelta,
         timedelta_frequency=timedelta_frequency,
     )
@@ -74,14 +74,14 @@ async def star_growth(
 async def open_issue_growth(
     request: Request,
     github_api: str,
-    access_token: str = Cookie(None),
+    accesstoken: str = Cookie(None),
     timedelta: int = 7,
     timedelta_frequency: int = 2,
     issue_stats: bool = False,
 ):
     task = issuegrowth.delay(
         github_api=github_api,
-        access_token=access_token,
+        access_token=accesstoken,
         timedelta=timedelta,
         timedelta_frequency=timedelta_frequency,
         issue_stats=issue_stats,
@@ -93,14 +93,14 @@ async def open_issue_growth(
 async def closed_issue_growth(
     request: Request,
     github_api: str,
-    access_token: str = Cookie(None),
+    accesstoken: str = Cookie(None),
     timedelta: int = 7,
     timedelta_frequency: int = 2,
     issue_stats: bool = False,
 ):
     task = issuegrowth.delay(
         github_api=github_api,
-        access_token=access_token,
+        access_token=accesstoken,
         timedelta=timedelta,
         timedelta_frequency=timedelta_frequency,
         state="closed",
@@ -112,13 +112,13 @@ async def closed_issue_growth(
 async def contributor_growth(
     request: Request,
     github_api: str,
-    access_token: str = Cookie(None),
+    accesstoken: str = Cookie(None),
     timedelta: int = 7,
     timedelta_frequency: int = 2,
 ):
     task = contributorgrowth.delay(
         github_api=github_api,
-        access_token=access_token,
+        access_token=accesstoken,
         timedelta=timedelta,
         timedelta_frequency=timedelta_frequency,
     )
@@ -139,7 +139,7 @@ def callback_helper(response: Response, gh_response):
         return "API response isn't as expected."
 
     response.set_cookie(
-        key="access_token",
+        key="accesstoken",
         value=access_token,
         httponly=True,
         expires=expires_in,
@@ -147,7 +147,7 @@ def callback_helper(response: Response, gh_response):
         samesite="strict",
     )
     response.set_cookie(
-        key="refresh_token",
+        key="refreshtoken",
         value=refresh_token,
         httponly=True,
         expires=refresh_token_expires_in,
