@@ -177,7 +177,47 @@ def callback(request: Request, code: str, response: Response):
             "client_secret": os.getenv("GITHUB_CLIENT_SECRET"),
         },
     )
-    return callback_helper(response=response, gh_response=gh_response)
+    pattern = r"access_token=([\w-]+)&expires_in=(\d+)&refresh_token=([\w-]+)&refresh_token_expires_in=(\d+)"
+
+    match = re.search(pattern, gh_response.text)
+
+    if match:
+        access_token = match.group(1)
+        expires_in = int(match.group(2))
+        refresh_token = match.group(3)
+        refresh_token_expires_in = int(match.group(4))
+    else:
+        return "API response isn't as expected."
+
+    response.set_cookie(
+        key="accesstoken",
+        value=access_token,
+        httponly=True,
+        expires=expires_in,
+        secure=True,
+        samesite="strict",
+    )
+    response.set_cookie(
+        key="refreshtoken",
+        value=refresh_token,
+        httponly=True,
+        expires=refresh_token_expires_in,
+        secure=True,
+        samesite="strict",
+    )
+
+    print(access_token)
+    print(refresh_token)
+
+    html_content = """
+    <html>
+        <body>
+            <h1>You may now close this window.</h1>
+        </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content, status_code=200)
+    # return callback_helper(response=response, gh_response=gh_response)
 
 
 @app.get("/githubrefreshtoken")
