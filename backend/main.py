@@ -1,9 +1,10 @@
 import os
 import re
+from typing import Optional
 
 import requests
 from dotenv import load_dotenv
-from fastapi import Cookie, FastAPI, Request, Response
+from fastapi import Cookie, FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -20,8 +21,9 @@ templates = Jinja2Templates(directory="templates")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:8080",
-        "https://github-repo-insights-frontend.onrender.com",
+        # "http://localhost:8080",
+        # "https://github-repo-insights-frontend.onrender.com",
+        "*"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -163,8 +165,8 @@ def closed_issue_growth(
 def contributor_growth(
     github_api: str,
     response: Response,
-    accesstoken: str = Cookie(default=None),
-    refreshtoken: str = Cookie(default=None),
+    accesstoken: Optional[str] = Cookie(default=None),
+    refreshtoken: Optional[str] = Cookie(default=None),
     timedelta: int = 7,
     timedelta_frequency: int = 2,
 ):
