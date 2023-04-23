@@ -21,9 +21,8 @@ templates = Jinja2Templates(directory="templates")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        # "http://localhost:8080",
-        # "https://github-repo-insights-frontend.onrender.com",
-        "*"
+        "http://localhost:8080",
+        "https://github-repo-insights-frontend.onrender.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -49,16 +48,16 @@ def add_tokens(response: Response, gh_response):
         value=access_token,
         httponly=True,
         expires=expires_in,
-        secure=True,
-        samesite="strict",
+        # secure=True,
+        # samesite="strict",
     )
     response.set_cookie(
         key="refreshtoken",
         value=refresh_token,
         httponly=True,
         expires=refresh_token_expires_in,
-        secure=True,
-        samesite="strict",
+        # secure=True,
+        # samesite="strict",
     )
 
     return "You may now close this window."
