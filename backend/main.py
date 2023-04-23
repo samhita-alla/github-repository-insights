@@ -4,7 +4,7 @@ import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from worker import celery as celery_app
 from worker import contributorgrowth, issuegrowth, stargrowth
@@ -139,7 +139,7 @@ async def contributor_growth(
 
 @app.get("/callback")
 def callback(request: Request, code: str, response: Response):
-    response = requests.post(
+    gh_response = requests.post(
         "https://github.com/login/oauth/access_token",
         params={
             "code": code,
@@ -147,8 +147,8 @@ def callback(request: Request, code: str, response: Response):
             "client_secret": os.getenv("GITHUB_CLIENT_SECRET"),
         },
     )
-    access_token = re.search(r"access_token=(.*?)&", response.text).group(1)
-    refresh_token = re.search(r"refresh_token=(.*?)&", response.text).group(1)
+    access_token = re.search(r"access_token=(.*?)&", gh_response.text).group(1)
+    refresh_token = re.search(r"refresh_token=(.*?)&", gh_response.text).group(1)
 
     response.set_cookie(key="access_token", value=access_token, httponly=True)
     response.set_cookie(key="refresh_token", value=refresh_token, httponly=True)
