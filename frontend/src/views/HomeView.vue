@@ -325,7 +325,7 @@ export default {
               this.form[this.entity_mapping[key].issuetable];
           }
           axios
-            .post("/" + key, null, {
+            .get("/" + key, null, {
               params: params,
             })
             .then((res) => {
@@ -431,7 +431,7 @@ export default {
         return;
       }
       axios
-        .post("/" + entity, null, {
+        .get("/" + entity, null, {
           params: {
             github_api: this[this.entity_mapping[entity].other_github_api],
             timedelta: this.form.timeDelta,
