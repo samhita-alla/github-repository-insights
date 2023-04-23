@@ -83,7 +83,13 @@ def set_cookie(response: Response):
 
 
 @app.get("/")
-def home(test: Optional[str] = Cookie(default=None)):
+def home(
+    test: Optional[str] = Cookie(default=None),
+    accesstoken: str = Cookie(default=None),
+    refreshtoken: str = Cookie(default=None),
+):
+    print(accesstoken)
+    print(refreshtoken)
     print(test)
     return "Hello, World!"
 
@@ -196,4 +202,34 @@ def callback(code: str, response: Response, state: str):
             "client_secret": os.getenv("GITHUB_CLIENT_SECRET"),
         },
     )
-    return add_tokens(response, gh_response)
+    pattern = r"access_token=([\w-]+)&expires_in=(\d+)&refresh_token=([\w-]+)&refresh_token_expires_in=(\d+)"
+
+    match = re.search(pattern, gh_response.text)
+
+    if match:
+        access_token = match.group(1)
+        expires_in = int(match.group(2))
+        refresh_token = match.group(3)
+        refresh_token_expires_in = int(match.group(4))
+    else:
+        return "API response isn't as expected."
+
+    response.set_cookie(
+        key="accesstoken",
+        value=access_token,
+        httponly=True,
+        expires=expires_in,
+        # secure=True,
+        # samesite="strict",
+    )
+    response.set_cookie(
+        key="refreshtoken",
+        value=refresh_token,
+        httponly=True,
+        expires=refresh_token_expires_in,
+        # secure=True,
+        # samesite="strict",
+    )
+
+    return "You may now close this window."
+    # return add_tokens(response, gh_response)
