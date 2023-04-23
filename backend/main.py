@@ -148,12 +148,14 @@ def callback_helper(response: Response, gh_response):
     )
     response.set_cookie(
         key="refreshtoken",
-        value=refresh_token,
+        value="hello",
         httponly=True,
         expires=refresh_token_expires_in,
         secure=True,
         samesite="strict",
     )
+
+    print(access_token)
 
     html_content = """
     <html>
