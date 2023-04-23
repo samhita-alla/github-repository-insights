@@ -2,9 +2,9 @@ from typing import Optional
 
 import requests
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from worker import celery as celery_app
 from worker import contributorgrowth, issuegrowth, stargrowth
@@ -125,19 +125,20 @@ async def contributor_growth(
     return JSONResponse({"task_id": task.id})
 
 
-@app.post("/githubaccesstoken")
-def github_access_token(request: Request, client_id: str, state: str):
-    return requests.post(
-        "https://github.com/login/oauth/authorize",
-        params={
-            "client_id": client_id,
-            "state": state,
-        },
-    )
+# @app.get("/githubaccesstoken")
+# def github_access_token(request: Request, client_id: str, state: str):
+#     response = requests.post(
+#         "https://github.com/login/oauth/authorize",
+#         params={
+#             "client_id": client_id,
+#             "state": state,
+#         },
+#     )
+#     print(response.text)
 
 
 @app.get("/callback")
-async def callback(request: Request, code: str):
+def callback(request: Request, code: str, response: Response):
     response = requests.post(
         "https://github.com/login/oauth/access_token",
         params={
@@ -148,5 +149,7 @@ async def callback(request: Request, code: str):
     )
     access_token = re.search(r"access_token=(.*?)&", response.text).group(1)
     refresh_token = re.search(r"refresh_token=(.*?)&", response.text).group(1)
-    print(access_token)
-    return JSONResponse({"access_token": access_token, "refresh_token": refresh_token})
+
+    response.set_cookie(key="access_token", value=access_token, httponly=True)
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True)
+    return True
