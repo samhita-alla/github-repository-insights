@@ -127,7 +127,7 @@ async def contributor_growth(
 
 @app.post("/githubaccesstoken")
 def github_access_token(request: Request, client_id: str, state: str):
-    requests.post(
+    return requests.post(
         "https://github.com/login/oauth/authorize",
         params={
             "client_id": client_id,
@@ -148,4 +148,5 @@ async def callback(request: Request, code: str):
     )
     access_token = re.search(r"access_token=(.*?)&", response.text).group(1)
     refresh_token = re.search(r"refresh_token=(.*?)&", response.text).group(1)
+    print(access_token)
     return JSONResponse({"access_token": access_token, "refresh_token": refresh_token})

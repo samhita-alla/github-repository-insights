@@ -8,7 +8,7 @@
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav">
           <li class="nav-item">
-            <button class="nav-link" v-on:click="github_auth"><svg xmlns="http://www.w3.org/2000/svg" width="24"
+            <button class="nav-link border-0 bg-transparent" v-on:click="github_auth"><svg xmlns="http://www.w3.org/2000/svg" width="24"
                 height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
                 stroke-linecap="round" stroke-linejoin="round" class="___ref-icon mantine-t4fnek">
                 <path
