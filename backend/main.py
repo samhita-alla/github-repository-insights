@@ -77,6 +77,11 @@ def fetch_token(response, refreshtoken, accesstoken):
         add_tokens(response=response, gh_response=gh_response)
 
 
+@app.get("/set")
+def set_cookie(response: Response):
+    response.set_cookie(key="test", value="test")
+
+
 @app.get("/")
 def home(test: Optional[str] = Cookie(default=None)):
     print(test)
@@ -171,9 +176,6 @@ def contributor_growth(
     timedelta: int = 7,
     timedelta_frequency: int = 2,
 ):
-    print(accesstoken)
-    print(refreshtoken)
-    print(test)
     fetch_token(response, refreshtoken, accesstoken)
     task = contributorgrowth.delay(
         github_api=github_api,
@@ -186,7 +188,6 @@ def contributor_growth(
 
 @app.get("/callback")
 def callback(code: str, response: Response, state: str):
-    response.set_cookie(key="test", value="test")
     gh_response = requests.post(
         "https://github.com/login/oauth/access_token",
         params={
