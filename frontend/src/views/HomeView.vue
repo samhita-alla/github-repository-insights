@@ -69,34 +69,41 @@
           <small class="form-text text-muted">Number of times Timedelta needs to be computed. For example, if set to 2,
             growth will be calculated for the past 10 days as well as the 10 days before that.</small>
         </div>
-        <div class="d-flex justify-content-center">
-          <ul class="list-group mb-3 text-start">
-            <li class="list-group-item border-0">
-              <input id="stargrowth-checkbox" v-model="form.starGrowthCheck" class="form-check-input" type="checkbox"
-                value="" checked />
+        <div class="mb-3">
+          <div class="form-check form-check-inline">
+            <input id="stargrowth-checkbox" v-model="form.starGrowthCheck" class="form-check-input" type="checkbox"
+              value="" checked />
+            <label class="form-check-label" for="stargrowth-checkbox">
               Star Growth
-            </li>
-            <li class="list-group-item border-0">
-              <input id="openissuegrowth-checkbox" v-model="form.openIssueGrowthCheck" class="form-check-input"
-                type="checkbox" value="" />
+            </label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input id="openissuegrowth-checkbox" v-model="form.openIssueGrowthCheck" class="form-check-input" type="checkbox"
+              value="" />
+            <label class="form-check-label" for="openissuegrowth-checkbox">
               Open Issue/Pull Request Growth
-            </li>
-            <li v-if="form.openIssueGrowthCheck" class="list-group-item border-0">
-              <input id="issuestats-checkbox" v-model="form.issueTable" class="form-check-input" type="checkbox"
-                value="" />
+            </label>
+          </div>
+          <div v-if="form.openIssueGrowthCheck" class="form-check form-check-inline">
+            <input id="issuestats-checkbox" v-model="form.issueTable" class="form-check-input" type="checkbox" value="" />
+            <label class="form-check-label" for="issuestats-checkbox">
               Issue Stats
-            </li>
-            <li class="list-group-item border-0">
-              <input id="closedissuegrowth-checkbox" v-model="form.closedIssueGrowthCheck" class="form-check-input"
-                type="checkbox" value="" />
+            </label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input id="closedissuegrowth-checkbox" v-model="form.closedIssueGrowthCheck" class="form-check-input" type="checkbox"
+              value="" />
+            <label class="form-check-label" for="closedissuegrowth-checkbox">
               Closed Issue/Pull Request Growth
-            </li>
-            <li class="list-group-item border-0">
-              <input id="contributorgrowth-checkbox" v-model="form.contributorGrowthCheck" class="form-check-input"
-                type="checkbox" value="" />
+            </label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input id="contributorgrowth-checkbox" v-model="form.contributorGrowthCheck" class="form-check-input"
+              type="checkbox" value="" />
+            <label class="form-check-label" for="contributorgrowth-checkbox">
               Contributor Growth
-            </li>
-          </ul>
+            </label>
+          </div>
         </div>
 
         <button type="submit" class="btn btn-dark" :disabled="

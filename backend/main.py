@@ -168,6 +168,8 @@ def contributor_growth(
     timedelta: int = 7,
     timedelta_frequency: int = 2,
 ):
+    print(accesstoken)
+    print(refreshtoken)
     fetch_token(response, refreshtoken, accesstoken)
     task = contributorgrowth.delay(
         github_api=github_api,
