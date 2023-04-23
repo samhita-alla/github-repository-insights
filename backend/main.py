@@ -1,12 +1,11 @@
 import os
 import re
-from typing import Optional
 
 import requests
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request, Response, Cookie
+from fastapi import Cookie, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from worker import celery as celery_app
 from worker import contributorgrowth, issuegrowth, stargrowth
@@ -30,102 +29,7 @@ app.add_middleware(
 )
 
 
-@app.get("/")
-async def home():
-    return "Hello, World!"
-
-
-@app.get("/tasks/{task_id}")
-def get_status(task_id: str):
-    task_result = celery_app.AsyncResult(task_id)
-    result = {
-        "task_id": task_id,
-        "task_status": task_result.status,
-        "task_result": task_result.result,
-        "progress": task_result.info or {"current": 0, "total": 0},
-    }
-    if (
-        result["task_status"] in ["SUCCESS", "FAILED"]
-        and "Not able to access the API" in result["task_result"]
-    ):
-        result["task_status"] = "FAILED"
-        celery_app.control.revoke(task_id)
-    return JSONResponse(result)
-
-
-@app.post("/stargrowth")
-async def star_growth(
-    request: Request,
-    github_api: str,
-    accesstoken: str = Cookie(None),
-    timedelta: int = 7,
-    timedelta_frequency: int = 2,
-):
-    task = stargrowth.delay(
-        github_api=github_api,
-        access_token=accesstoken,
-        timedelta=timedelta,
-        timedelta_frequency=timedelta_frequency,
-    )
-    return JSONResponse({"task_id": task.id})
-
-
-@app.post("/openissuegrowth")
-async def open_issue_growth(
-    request: Request,
-    github_api: str,
-    accesstoken: str = Cookie(None),
-    timedelta: int = 7,
-    timedelta_frequency: int = 2,
-    issue_stats: bool = False,
-):
-    task = issuegrowth.delay(
-        github_api=github_api,
-        access_token=accesstoken,
-        timedelta=timedelta,
-        timedelta_frequency=timedelta_frequency,
-        issue_stats=issue_stats,
-    )
-    return JSONResponse({"task_id": task.id})
-
-
-@app.post("/closedissuegrowth")
-async def closed_issue_growth(
-    request: Request,
-    github_api: str,
-    accesstoken: str = Cookie(None),
-    timedelta: int = 7,
-    timedelta_frequency: int = 2,
-    issue_stats: bool = False,
-):
-    task = issuegrowth.delay(
-        github_api=github_api,
-        access_token=accesstoken,
-        timedelta=timedelta,
-        timedelta_frequency=timedelta_frequency,
-        state="closed",
-    )
-    return JSONResponse({"task_id": task.id})
-
-
-@app.post("/contributorgrowth")
-async def contributor_growth(
-    request: Request,
-    github_api: str,
-    accesstoken: str = Cookie(None),
-    timedelta: int = 7,
-    timedelta_frequency: int = 2,
-):
-    task = contributorgrowth.delay(
-        github_api=github_api,
-        access_token=accesstoken,
-        timedelta=timedelta,
-        timedelta_frequency=timedelta_frequency,
-    )
-    return JSONResponse({"task_id": task.id})
-
-
-def callback_helper(response: Response, gh_response):
+def add_tokens(response: Response, gh_response):
     pattern = r"access_token=([\w-]+)&expires_in=(\d+)&refresh_token=([\w-]+)&refresh_token_expires_in=(\d+)"
 
     match = re.search(pattern, gh_response.text)
@@ -158,8 +62,124 @@ def callback_helper(response: Response, gh_response):
     return "You may now close this window."
 
 
+def fetch_token(response, refreshtoken, accesstoken):
+    if refreshtoken and not accesstoken:
+        gh_response = requests.post(
+            "https://github.com/login/oauth/access_token",
+            params={
+                "grant_type": "refresh_token",
+                "client_id": os.getenv("GITHUB_CLIENT_ID"),
+                "client_secret": os.getenv("GITHUB_CLIENT_SECRET"),
+                "refresh_token": refreshtoken,
+            },
+        )
+        add_tokens(response=response, gh_response=gh_response)
+
+
+@app.get("/")
+def home():
+    return "Hello, World!"
+
+
+@app.get("/tasks/{task_id}")
+def get_status(task_id: str):
+    task_result = celery_app.AsyncResult(task_id)
+    result = {
+        "task_id": task_id,
+        "task_status": task_result.status,
+        "task_result": task_result.result,
+        "progress": task_result.info or {"current": 0, "total": 0},
+    }
+    if (
+        result["task_status"] in ["SUCCESS", "FAILED"]
+        and "Not able to access the API" in result["task_result"]
+    ):
+        result["task_status"] = "FAILED"
+        celery_app.control.revoke(task_id)
+    return JSONResponse(result)
+
+
+@app.post("/stargrowth")
+def star_growth(
+    github_api: str,
+    response: Response,
+    accesstoken: str = Cookie(default=None),
+    refreshtoken: str = Cookie(default=None),
+    timedelta: int = 7,
+    timedelta_frequency: int = 2,
+):
+    fetch_token(response, refreshtoken, accesstoken)
+    task = stargrowth.delay(
+        github_api=github_api,
+        access_token=accesstoken,
+        timedelta=timedelta,
+        timedelta_frequency=timedelta_frequency,
+    )
+    return JSONResponse({"task_id": task.id})
+
+
+@app.post("/openissuegrowth")
+def open_issue_growth(
+    github_api: str,
+    response: Response,
+    accesstoken: str = Cookie(default=None),
+    refreshtoken: str = Cookie(default=None),
+    timedelta: int = 7,
+    timedelta_frequency: int = 2,
+    issue_stats: bool = False,
+):
+    fetch_token(response, refreshtoken, accesstoken)
+    task = issuegrowth.delay(
+        github_api=github_api,
+        access_token=accesstoken,
+        timedelta=timedelta,
+        timedelta_frequency=timedelta_frequency,
+        issue_stats=issue_stats,
+    )
+    return JSONResponse({"task_id": task.id})
+
+
+@app.post("/closedissuegrowth")
+def closed_issue_growth(
+    github_api: str,
+    response: Response,
+    accesstoken: str = Cookie(default=None),
+    refreshtoken: str = Cookie(default=None),
+    timedelta: int = 7,
+    timedelta_frequency: int = 2,
+):
+    fetch_token(response, refreshtoken, accesstoken)
+    task = issuegrowth.delay(
+        github_api=github_api,
+        access_token=accesstoken,
+        timedelta=timedelta,
+        timedelta_frequency=timedelta_frequency,
+        state="closed",
+    )
+    return JSONResponse({"task_id": task.id})
+
+
+@app.post("/contributorgrowth")
+def contributor_growth(
+    github_api: str,
+    response: Response,
+    accesstoken: str = Cookie(default=None),
+    refreshtoken: str = Cookie(default=None),
+    timedelta: int = 7,
+    timedelta_frequency: int = 2,
+):
+    fetch_token(response, refreshtoken, accesstoken)
+    task = contributorgrowth.delay(
+        github_api=github_api,
+        access_token=accesstoken,
+        timedelta=timedelta,
+        timedelta_frequency=timedelta_frequency,
+    )
+    return JSONResponse({"task_id": task.id})
+
+
 @app.get("/callback")
-def callback(code: str, response: Response):
+def callback(code: str, response: Response, state: str):
     gh_response = requests.post(
         "https://github.com/login/oauth/access_token",
         params={
@@ -168,18 +188,4 @@ def callback(code: str, response: Response):
             "client_secret": os.getenv("GITHUB_CLIENT_SECRET"),
         },
     )
-    return callback_helper(response, gh_response)
-
-
-@app.get("/githubrefreshtoken")
-def github_refresh_token(response: Response, refreshtoken: str = Cookie(None)):
-    gh_response = requests.post(
-        "https://github.com/login/oauth/access_token",
-        params={
-            "grant_type": "refresh_token",
-            "client_id": os.getenv("GITHUB_CLIENT_ID"),
-            "client_secret": os.getenv("GITHUB_CLIENT_SECRET"),
-            "refresh_token": refreshtoken,
-        },
-    )
-    return callback_helper(response=response, gh_response=gh_response)
+    return add_tokens(response, gh_response)

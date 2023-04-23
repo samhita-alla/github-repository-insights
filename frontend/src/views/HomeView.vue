@@ -285,13 +285,6 @@ export default {
       },
       deep: true,
     },
-    // gitHubState: {
-    //   handler: function () {
-    //     console.log(gitHubState);
-    //     localStorage.setItem("gitHubState", this.gitHubState);
-    //   },
-    //   deep: true,
-    // },
   },
   mounted() {
     this.form = JSON.parse(localStorage.getItem("form")) || this.form;
