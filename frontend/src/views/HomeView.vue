@@ -325,7 +325,7 @@ export default {
               this.form[this.entity_mapping[key].issuetable];
           }
           axios
-            .get("/" + key, null, {
+            .get("/" + key, {
               params: params,
             })
             .then((res) => {
