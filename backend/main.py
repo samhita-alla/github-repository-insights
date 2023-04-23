@@ -9,6 +9,7 @@ from fastapi.templating import Jinja2Templates
 from worker import celery as celery_app
 from worker import contributorgrowth, issuegrowth, stargrowth
 import os
+import re
 
 load_dotenv()
 
@@ -124,15 +125,27 @@ async def contributor_growth(
     return JSONResponse({"task_id": task.id})
 
 
-@app.get("/callback")
-async def callback(request: Request, code: str):
-    print(code)
-    response = requests.post(
-        "https://github.com/login/oauth/access_token",
-        data={
-            "code": code,
-            "client_id": os.getenv("VUE_APP_GITHUB_CLIENT_ID"),
-            "client_secret": os.getenv("8b001c073e4545d8cbadfce330699a89f65bdc53"),
+@app.post("/githubaccesstoken")
+def github_access_token(request: Request, client_id: str, state: str):
+    requests.post(
+        "https://github.com/login/oauth/authorize",
+        params={
+            "client_id": client_id,
+            "state": state,
         },
     )
-    print(response)
+
+
+@app.get("/callback")
+async def callback(request: Request, code: str):
+    response = requests.post(
+        "https://github.com/login/oauth/access_token",
+        params={
+            "code": code,
+            "client_id": os.getenv("GITHUB_CLIENT_ID"),
+            "client_secret": os.getenv("GITHUB_CLIENT_SECRET"),
+        },
+    )
+    access_token = re.search(r"access_token=(.*?)&", response.text).group(1)
+    refresh_token = re.search(r"refresh_token=(.*?)&", response.text).group(1)
+    return JSONResponse({"access_token": access_token, "refresh_token": refresh_token})
