@@ -1,10 +1,5 @@
-import os
-import re
-from typing import Optional
-
-import requests
 from dotenv import load_dotenv
-from fastapi import Cookie, FastAPI, Response
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -30,67 +25,8 @@ app.add_middleware(
 )
 
 
-def add_tokens(response: Response, gh_response):
-    pattern = r"access_token=([\w-]+)&expires_in=(\d+)&refresh_token=([\w-]+)&refresh_token_expires_in=(\d+)"
-
-    match = re.search(pattern, gh_response.text)
-
-    if match:
-        access_token = match.group(1)
-        expires_in = int(match.group(2))
-        refresh_token = match.group(3)
-        refresh_token_expires_in = int(match.group(4))
-    else:
-        return "API response isn't as expected."
-
-    response.set_cookie(
-        key="accesstoken",
-        value=access_token,
-        httponly=True,
-        expires=expires_in,
-        # secure=True,
-        # samesite="strict",
-    )
-    response.set_cookie(
-        key="refreshtoken",
-        value=refresh_token,
-        httponly=True,
-        expires=refresh_token_expires_in,
-        # secure=True,
-        # samesite="strict",
-    )
-
-    return "You may now close this window."
-
-
-def fetch_token(response, refreshtoken, accesstoken):
-    if refreshtoken and not accesstoken:
-        gh_response = requests.post(
-            "https://github.com/login/oauth/access_token",
-            params={
-                "grant_type": "refresh_token",
-                "client_id": os.getenv("GITHUB_CLIENT_ID"),
-                "client_secret": os.getenv("GITHUB_CLIENT_SECRET"),
-                "refresh_token": refreshtoken,
-            },
-        )
-        add_tokens(response=response, gh_response=gh_response)
-
-
-@app.get("/set")
-def set_cookie(response: Response):
-    response.set_cookie(key="test", value="test")
-
-
 @app.get("/")
-def home(
-    test: Optional[str] = Cookie(default=None),
-    accesstoken: str = Cookie(default=None),
-    refreshtoken: str = Cookie(default=None),
-):
-    print(accesstoken)
-    print(refreshtoken)
-    print(test)
+def home():
     return "Hello, World!"
 
 
@@ -115,13 +51,13 @@ def get_status(task_id: str):
 @app.get("/stargrowth")
 def star_growth(
     github_api: str,
-    response: Response,
-    accesstoken: str = Cookie(default=None),
-    refreshtoken: str = Cookie(default=None),
     timedelta: int = 7,
     timedelta_frequency: int = 2,
+    authorization: str = Header(default=None),
 ):
-    fetch_token(response, refreshtoken, accesstoken)
+    scheme, accesstoken = authorization.split()
+    if scheme.lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Invalid authentication scheme")
     task = stargrowth.delay(
         github_api=github_api,
         access_token=accesstoken,
@@ -134,14 +70,14 @@ def star_growth(
 @app.get("/openissuegrowth")
 def open_issue_growth(
     github_api: str,
-    response: Response,
-    accesstoken: str = Cookie(default=None),
-    refreshtoken: str = Cookie(default=None),
     timedelta: int = 7,
     timedelta_frequency: int = 2,
     issue_stats: bool = False,
+    authorization: str = Header(default=None),
 ):
-    fetch_token(response, refreshtoken, accesstoken)
+    scheme, accesstoken = authorization.split()
+    if scheme.lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Invalid authentication scheme")
     task = issuegrowth.delay(
         github_api=github_api,
         access_token=accesstoken,
@@ -153,15 +89,15 @@ def open_issue_growth(
 
 
 @app.get("/closedissuegrowth")
-async def closed_issue_growth(
+def closed_issue_growth(
     github_api: str,
-    response: Response,
-    accesstoken: str = Cookie(default=None),
-    refreshtoken: str = Cookie(default=None),
     timedelta: int = 7,
     timedelta_frequency: int = 2,
+    authorization: str = Header(default=None),
 ):
-    fetch_token(response, refreshtoken, accesstoken)
+    scheme, accesstoken = authorization.split()
+    if scheme.lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Invalid authentication scheme")
     task = issuegrowth.delay(
         github_api=github_api,
         access_token=accesstoken,
@@ -173,19 +109,16 @@ async def closed_issue_growth(
 
 
 @app.get("/contributorgrowth")
-async def contributor_growth(
+def contributor_growth(
     github_api: str,
-    response: Response,
     timedelta: int = 7,
     timedelta_frequency: int = 2,
-    accesstoken: Optional[str] = Cookie(default=None),
-    refreshtoken: Optional[str] = Cookie(default=None),
-    test: Optional[str] = Cookie(default=None),
+    authorization: str = Header(default=None),
 ):
-    print(accesstoken)
-    print(refreshtoken)
-    print(test)
-    fetch_token(response, refreshtoken, accesstoken)
+    scheme, accesstoken = authorization.split()
+    if scheme.lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Invalid authentication scheme")
+
     task = contributorgrowth.delay(
         github_api=github_api,
         access_token=accesstoken,
@@ -193,48 +126,3 @@ async def contributor_growth(
         timedelta_frequency=timedelta_frequency,
     )
     return JSONResponse({"task_id": task.id})
-
-
-@app.get("/callback")
-def callback(code: str, response: Response, state: str):
-    gh_response = requests.post(
-        "https://github.com/login/oauth/access_token",
-        params={
-            "code": code,
-            "client_id": os.getenv("GITHUB_CLIENT_ID"),
-            "client_secret": os.getenv("GITHUB_CLIENT_SECRET"),
-        },
-    )
-    pattern = r"access_token=([\w-]+)&expires_in=(\d+)&refresh_token=([\w-]+)&refresh_token_expires_in=(\d+)"
-
-    match = re.search(pattern, gh_response.text)
-    if match:
-        access_token = match.group(1)
-        expires_in = int(match.group(2))
-        refresh_token = match.group(3)
-        refresh_token_expires_in = int(match.group(4))
-    else:
-        return "API response isn't as expected."
-
-    content = {"message": "You may now close this window."}
-    response = JSONResponse(content=content)
-
-    response.set_cookie(
-        key="accesstoken",
-        value=access_token,
-        # httponly=True,
-        expires=expires_in,
-        # secure=True,
-        # samesite="strict",
-    )
-    response.set_cookie(
-        key="refreshtoken",
-        value=refresh_token,
-        # httponly=True,
-        expires=refresh_token_expires_in,
-        # secure=True,
-        # samesite="strict",
-    )
-
-    return response
-    # return add_tokens(response, gh_response)

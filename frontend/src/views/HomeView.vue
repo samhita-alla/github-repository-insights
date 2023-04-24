@@ -8,18 +8,17 @@
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav">
           <li class="nav-item">
-            <a class="nav-link"
-              :href="'https://github.com/login/oauth/authorize?client_id=' + gitHubClientId + '&state=' + gitHubState"
-              target="_blank"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
-                class="___ref-icon mantine-t4fnek">
+            <button class="nav-link border-0 bg-transparent" data-bs-toggle="modal"
+              data-bs-target="#accessTokenModal"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" class="___ref-icon mantine-t4fnek">
                 <path
                   d="M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1 -4.069 0l-.301 -.301l-6.558 6.558a2 2 0 0 1 -1.239 .578l-.175 .008h-1.172a1 1 0 0 1 -.993 -.883l-.007 -.117v-1.172a2 2 0 0 1 .467 -1.284l.119 -.13l.414 -.414h2v-2h2v-2l2.144 -2.144l-.301 -.301a2.877 2.877 0 0 1 0 -4.069l2.643 -2.643a2.877 2.877 0 0 1 4.069 0z">
                 </path>
                 <path d="M15 9h.01"></path>
               </svg>
               Access Token
-            </a>
+            </button>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="https://github.com/samhita-alla/github-stats" target="_blank"><svg
@@ -35,10 +34,43 @@
           </li>
         </ul>
       </div>
+      <div v-if="alertVisible" class="position-fixed top-0 end-0 p-3">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          <strong>Success!</strong> You have successfully updated your access token.
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"
+            v-on:click="alertHide"></button>
+        </div>
+      </div>
     </nav>
   </div>
   <div class="container px-5">
     <main>
+      <!-- Modal -->
+      <div class="modal fade" style="text-align: left !important;" id="accessTokenModal" tabindex="-1"
+        aria-labelledby="accessTokenModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="accessTokenModalLabel">Access Token</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <h4>🔑 Enter your GitHub access token</h4>
+              <p>Your access token is stored locally on your browser.</p>
+              <div class="mb-3">
+                <label for="access-token" class="col-form-label">Access Token</label>
+                <input type="password" v-model="accessToken" class="form-control" id="access-token"
+                  placeholder="xxxxxxxxxxxxxxxx">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-primary" v-on:click="storeAccessToken" data-bs-dismiss="modal">Save
+                changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="py-5 text-center">
         <h1>GitHub Repository Insights</h1>
         <p class="lead">
@@ -173,6 +205,8 @@ export default {
         contributorGrowthCheck: false,
         issueTable: null,
       },
+      accessToken: "",
+      alertVisible: false,
       gitHubClientId: process.env.VUE_APP_GITHUB_CLIENT_ID,
       gitHubState: Math.random().toString(36).slice(2),
       timeDeltaStr: "",
@@ -299,6 +333,7 @@ export default {
       this.form.timeDelta;
     document.getElementById("timedelta-frequency-rangeval").innerText =
       this.form.timeDeltaFrequency;
+    this.accessToken = localStorage.getItem("accessToken") || "";
   },
   methods: {
     submit: function () {
@@ -326,6 +361,7 @@ export default {
           }
           axios
             .get("/" + key, {
+              headers: { 'Authorization': 'Bearer ' + this.accessToken },
               params: params,
             })
             .then((res) => {
@@ -432,6 +468,7 @@ export default {
       }
       axios
         .get("/" + entity, {
+          headers: { 'Authorization': 'Bearer ' + this.accessToken },
           params: {
             github_api: this[this.entity_mapping[entity].other_github_api],
             timedelta: this.form.timeDelta,
@@ -446,6 +483,20 @@ export default {
         .catch((error) => {
           console.error(error);
         });
+    },
+    storeAccessToken: function () {
+      localStorage.setItem("accessToken", this.accessToken);
+      this.alertShow();
+    },
+    alertShow() {
+      this.alertVisible = true;
+      console.log(this.alertVisible);
+      setTimeout(() => {
+        this.alertHide();
+      }, 3000); // hide the alert after 5 seconds (5000ms)
+    },
+    alertHide() {
+      this.alertVisible = false;
     },
     removeTag: function (index, entity) {
       this[this.entity_mapping[entity].chartdata].datasets.splice(index, 1);
