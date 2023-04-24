@@ -153,7 +153,7 @@ def open_issue_growth(
 
 
 @app.get("/closedissuegrowth")
-def closed_issue_growth(
+async def closed_issue_growth(
     github_api: str,
     response: Response,
     accesstoken: str = Cookie(default=None),
@@ -173,7 +173,7 @@ def closed_issue_growth(
 
 
 @app.get("/contributorgrowth")
-def contributor_growth(
+async def contributor_growth(
     github_api: str,
     response: Response,
     timedelta: int = 7,
@@ -216,6 +216,9 @@ def callback(code: str, response: Response, state: str):
     else:
         return "API response isn't as expected."
 
+    content = {"message": "You may now close this window."}
+    response = JSONResponse(content=content)
+
     response.set_cookie(
         key="accesstoken",
         value=access_token,
@@ -233,5 +236,5 @@ def callback(code: str, response: Response, state: str):
         # samesite="strict",
     )
 
-    return "You may now close this window."
+    return response
     # return add_tokens(response, gh_response)
