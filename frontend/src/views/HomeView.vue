@@ -78,8 +78,8 @@
             </label>
           </div>
           <div class="form-check form-check-inline">
-            <input id="openissuegrowth-checkbox" v-model="form.openIssueGrowthCheck" class="form-check-input" type="checkbox"
-              value="" />
+            <input id="openissuegrowth-checkbox" v-model="form.openIssueGrowthCheck" class="form-check-input"
+              type="checkbox" value="" />
             <label class="form-check-label" for="openissuegrowth-checkbox">
               Open Issue/Pull Request Growth
             </label>
@@ -91,8 +91,8 @@
             </label>
           </div>
           <div class="form-check form-check-inline">
-            <input id="closedissuegrowth-checkbox" v-model="form.closedIssueGrowthCheck" class="form-check-input" type="checkbox"
-              value="" />
+            <input id="closedissuegrowth-checkbox" v-model="form.closedIssueGrowthCheck" class="form-check-input"
+              type="checkbox" value="" />
             <label class="form-check-label" for="closedissuegrowth-checkbox">
               Closed Issue/Pull Request Growth
             </label>
@@ -431,7 +431,7 @@ export default {
         return;
       }
       axios
-        .get("/" + entity, null, {
+        .get("/" + entity, {
           params: {
             github_api: this[this.entity_mapping[entity].other_github_api],
             timedelta: this.form.timeDelta,

@@ -131,7 +131,7 @@ def star_growth(
     return JSONResponse({"task_id": task.id})
 
 
-@app.post("/openissuegrowth")
+@app.get("/openissuegrowth")
 def open_issue_growth(
     github_api: str,
     response: Response,
@@ -152,7 +152,7 @@ def open_issue_growth(
     return JSONResponse({"task_id": task.id})
 
 
-@app.post("/closedissuegrowth")
+@app.get("/closedissuegrowth")
 def closed_issue_growth(
     github_api: str,
     response: Response,
@@ -176,12 +176,15 @@ def closed_issue_growth(
 def contributor_growth(
     github_api: str,
     response: Response,
+    timedelta: int = 7,
+    timedelta_frequency: int = 2,
     accesstoken: Optional[str] = Cookie(default=None),
     refreshtoken: Optional[str] = Cookie(default=None),
     test: Optional[str] = Cookie(default=None),
-    timedelta: int = 7,
-    timedelta_frequency: int = 2,
 ):
+    print(accesstoken)
+    print(refreshtoken)
+    print(test)
     fetch_token(response, refreshtoken, accesstoken)
     task = contributorgrowth.delay(
         github_api=github_api,
@@ -205,7 +208,6 @@ def callback(code: str, response: Response, state: str):
     pattern = r"access_token=([\w-]+)&expires_in=(\d+)&refresh_token=([\w-]+)&refresh_token_expires_in=(\d+)"
 
     match = re.search(pattern, gh_response.text)
-
     if match:
         access_token = match.group(1)
         expires_in = int(match.group(2))
@@ -217,7 +219,7 @@ def callback(code: str, response: Response, state: str):
     response.set_cookie(
         key="accesstoken",
         value=access_token,
-        httponly=True,
+        # httponly=True,
         expires=expires_in,
         # secure=True,
         # samesite="strict",
@@ -225,7 +227,7 @@ def callback(code: str, response: Response, state: str):
     response.set_cookie(
         key="refreshtoken",
         value=refresh_token,
-        httponly=True,
+        # httponly=True,
         expires=refresh_token_expires_in,
         # secure=True,
         # samesite="strict",
