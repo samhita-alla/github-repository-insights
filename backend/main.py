@@ -17,7 +17,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:8080",
-        "https://github-repo-insights-frontend.onrender.com",
+        "https://repo-insights.onrender.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],
