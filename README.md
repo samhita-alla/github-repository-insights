@@ -14,9 +14,9 @@ Generate real-time GitHub insights for your open-source projects and stay inform
 
 - Vue
 - FastAPI
-- Bootstrap
 - Celery
 - Redis
+- Bootstrap
 
 ### Prerequisites
 

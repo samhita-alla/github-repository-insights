@@ -491,9 +491,14 @@ def issuegrowth(
                         ).json()
                     except request_error_codes:
                         return EXCEPTION_MESSAGE
-                    if classifier.classify(
+                    if comments_list[-1]["user"][
+                        "type"
+                    ] == "Bot" or classifier.classify(
                         dialogue_act_features(comments_list[-1]["body"])
-                    ) in ["whQuestion", "ynQuestion"]:
+                    ) in [
+                        "whQuestion",
+                        "ynQuestion",
+                    ]:
                         issue_open_state = "unaddressed"
                     else:
                         issue_open_state = "addressed"
@@ -935,7 +940,7 @@ def contributorgrowth(
                         contributor_name in contributor_count
                         and contributor_count[contributor_name]
                         == contributor["contributions"]
-                        and "bot" not in contributor_name
+                        and contributor["type"] != "Bot"
                     ):
                         new_contributors += 1
 
