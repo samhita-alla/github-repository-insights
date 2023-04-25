@@ -321,9 +321,6 @@ export default {
     form: {
       handler: function () {
         localStorage.setItem("form", JSON.stringify(this.form));
-        if (this.form.timeDeltaFrequency) {
-          this.timeDeltaStr = converter.toWords(this.form.timeDeltaFrequency);
-        }
       },
       deep: true,
     },
@@ -334,6 +331,9 @@ export default {
       this.form.timeDelta;
     document.getElementById("timedelta-frequency-rangeval").innerText =
       this.form.timeDeltaFrequency;
+    if (this.form.timeDeltaFrequency) {
+      this.timeDeltaStr = converter.toWords(this.form.timeDeltaFrequency);
+    }
     this.accessToken = localStorage.getItem("accessToken") || "";
   },
   methods: {
@@ -493,7 +493,6 @@ export default {
     },
     alertShow() {
       this.alertVisible = true;
-      console.log(this.alertVisible);
       setTimeout(() => {
         this.alertHide();
       }, 3000); // hide the alert after 5 seconds (5000ms)
