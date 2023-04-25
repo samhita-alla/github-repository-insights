@@ -55,9 +55,11 @@ def star_growth(
     timedelta_frequency: int = 2,
     authorization: str = Header(default=None),
 ):
-    scheme, accesstoken = authorization.split()
-    if scheme.lower() != "bearer":
-        raise HTTPException(status_code=401, detail="Invalid authentication scheme")
+    accesstoken = None
+    if authorization:
+        scheme, accesstoken = authorization.split()
+        if scheme.lower() != "bearer":
+            raise HTTPException(status_code=401, detail="Invalid authentication scheme")
     task = stargrowth.delay(
         github_api=github_api,
         access_token=accesstoken,
@@ -75,9 +77,11 @@ def open_issue_growth(
     issue_stats: bool = False,
     authorization: str = Header(default=None),
 ):
-    scheme, accesstoken = authorization.split()
-    if scheme.lower() != "bearer":
-        raise HTTPException(status_code=401, detail="Invalid authentication scheme")
+    accesstoken = None
+    if authorization:
+        scheme, accesstoken = authorization.split()
+        if scheme.lower() != "bearer":
+            raise HTTPException(status_code=401, detail="Invalid authentication scheme")
     task = issuegrowth.delay(
         github_api=github_api,
         access_token=accesstoken,
@@ -95,9 +99,11 @@ def closed_issue_growth(
     timedelta_frequency: int = 2,
     authorization: str = Header(default=None),
 ):
-    scheme, accesstoken = authorization.split()
-    if scheme.lower() != "bearer":
-        raise HTTPException(status_code=401, detail="Invalid authentication scheme")
+    accesstoken = None
+    if authorization:
+        scheme, accesstoken = authorization.split()
+        if scheme.lower() != "bearer":
+            raise HTTPException(status_code=401, detail="Invalid authentication scheme")
     task = issuegrowth.delay(
         github_api=github_api,
         access_token=accesstoken,
@@ -115,9 +121,11 @@ def contributor_growth(
     timedelta_frequency: int = 2,
     authorization: str = Header(default=None),
 ):
-    scheme, accesstoken = authorization.split()
-    if scheme.lower() != "bearer":
-        raise HTTPException(status_code=401, detail="Invalid authentication scheme")
+    accesstoken = None
+    if authorization:
+        scheme, accesstoken = authorization.split()
+        if scheme.lower() != "bearer":
+            raise HTTPException(status_code=401, detail="Invalid authentication scheme")
 
     task = contributorgrowth.delay(
         github_api=github_api,

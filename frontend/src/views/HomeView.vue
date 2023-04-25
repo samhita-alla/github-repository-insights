@@ -62,10 +62,12 @@
                 <input type="password" v-model="accessToken" class="form-control" id="access-token"
                   placeholder="xxxxxxxxxxxxxxxx">
               </div>
+              <p>→ Obtain your access token by visiting <a href="https://github.com/settings/tokens/new">GitHub</a>. No
+                scope is required.</p>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-              <button type="button" class="btn btn-primary" v-on:click="storeAccessToken" data-bs-dismiss="modal">Save
+              <button type="button" class="btn btn-dark" v-on:click="storeAccessToken" data-bs-dismiss="modal">Save
                 changes</button>
             </div>
           </div>
@@ -186,7 +188,6 @@
 <script>
 import axios from "axios";
 import SubComponentContainer from "../components/SubComponent.vue";
-import { ref } from "vue";
 
 var converter = require("number-to-words");
 
@@ -198,7 +199,7 @@ export default {
       form: {
         githubApi: "flyteorg/flyte",
         timeDelta: 7,
-        timeDeltaFrequency: ref(''),
+        timeDeltaFrequency: 2,
         starGrowthCheck: true,
         openIssueGrowthCheck: false,
         closedIssueGrowthCheck: false,
@@ -359,9 +360,10 @@ export default {
             params["issue_stats"] =
               this.form[this.entity_mapping[key].issuetable];
           }
+          var headers = this.accessToken ? { 'Authorization': 'Bearer ' + this.accessToken } : null;
           axios
             .get("/" + key, {
-              headers: { 'Authorization': 'Bearer ' + this.accessToken },
+              headers: headers,
               params: params,
             })
             .then((res) => {
@@ -466,9 +468,10 @@ export default {
           "This repo has already been added.";
         return;
       }
+      var headers = this.accessToken ? { 'Authorization': 'Bearer ' + this.accessToken } : null;
       axios
         .get("/" + entity, {
-          headers: { 'Authorization': 'Bearer ' + this.accessToken },
+          headers: headers,
           params: {
             github_api: this[this.entity_mapping[entity].other_github_api],
             timedelta: this.form.timeDelta,
