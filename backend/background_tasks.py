@@ -77,7 +77,13 @@ def find_nearest(array, value):
     return idx
 
 
-@celery.task(name="stargrowth")
+@celery.task(
+    name="stargrowth",
+    autoretry_for=(Exception,),
+    max_retries=3,
+    retry_backoff=True,
+    rate_limit="3/m",
+)
 def stargrowth(
     github_api: str,
     access_token: Optional[str] = None,
@@ -396,7 +402,13 @@ def stargrowth(
     return {"graph_data": OrderedDict(reversed(list(result_stars_dict.items())))}
 
 
-@celery.task(name="issuegrowth")
+@celery.task(
+    name="issuegrowth",
+    autoretry_for=(Exception,),
+    max_retries=3,
+    retry_backoff=True,
+    rate_limit="3/m",
+)
 def issuegrowth(
     github_api: str,
     access_token: Optional[str] = None,
@@ -826,7 +838,13 @@ def issuegrowth(
     }
 
 
-@celery.task(name="contributorgrowth")
+@celery.task(
+    name="contributorgrowth",
+    autoretry_for=(Exception,),
+    max_retries=3,
+    retry_backoff=True,
+    rate_limit="3/m",
+)
 def contributorgrowth(
     github_api: str,
     access_token: Optional[str] = None,
