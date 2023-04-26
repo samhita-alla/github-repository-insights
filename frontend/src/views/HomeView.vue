@@ -55,7 +55,7 @@
             </div>
             <div class="modal-body">
               <h4>🔑 Enter your GitHub access token</h4>
-              <p>Your access token is stored locally on your browser.</p>
+              <p>Your access token is stored locally on your browser and sent securely to the configured backend.</p>
               <div class="mb-3">
                 <label for="access-token" class="col-form-label">Access Token</label>
                 <input id="access-token" v-model="accessToken" type="password" class="form-control"
@@ -188,11 +188,12 @@
       </MetricComponentContainer>
       <!-- END STAR GROWTH UI -->
       <!-- START OPEN ISSUE/PR GROWTH UI -->
-      <MetricComponentContainer v-model:otherGithubApi="otherGithubApiOpenIssueGrowth" :chart-data="openIssueGrowthChartData"
-        :growth-error="openIssueGrowthError" :growth-progress="openIssueGrowthProgress"
-        :is-add-repo="isAddRepoOpenIssueGrowth" :issue-table="issueTable" :time-delta-frequency="timeDeltaStr"
-        heading="openissuegrowth" title="Open Issue/Pull Request Growth" label="Open Issues/PRs"
-        @add-repo-growth="addRepoGrowth" @growth-error-button="openIssueGrowthErrorButton" @remove-tag="removeTag">
+      <MetricComponentContainer v-model:otherGithubApi="otherGithubApiOpenIssueGrowth"
+        :chart-data="openIssueGrowthChartData" :growth-error="openIssueGrowthError"
+        :growth-progress="openIssueGrowthProgress" :is-add-repo="isAddRepoOpenIssueGrowth" :issue-table="issueTable"
+        :time-delta-frequency="timeDeltaStr" heading="openissuegrowth" title="Open Issue/Pull Request Growth"
+        label="Open Issues/PRs" @add-repo-growth="addRepoGrowth" @growth-error-button="openIssueGrowthErrorButton"
+        @remove-tag="removeTag">
       </MetricComponentContainer>
       <!-- END OPEN ISSUE/PR GROWTH UI -->
       <!-- START CLOSED ISSUE/PR GROWTH UI -->
