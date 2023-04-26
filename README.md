@@ -6,6 +6,8 @@ Generate real-time GitHub insights for your open-source projects and stay inform
 
 <img width="845" alt="Open Issue Growth" src="https://user-images.githubusercontent.com/27777173/234552533-29da101b-8090-40bf-9925-bf59dbb59ad5.png">
 
+**Please note that if the workload is large, the current hosted application may not perform optimally due to resource limitations. To keep costs low, the current instances may not be able to handle high workloads. In such cases, it is recommended to consider self-hosting the application.**
+
 ## 🔥 Features
 
 - Retrieve daily, weekly, and monthly growth figures
@@ -35,5 +37,3 @@ Generate real-time GitHub insights for your open-source projects and stay inform
 - Backend: `cd backend && pip install -r requirements.txt && uvicorn main:app --reload`
 - The backend server will be served at http://localhost:8000
 - Background task: `celery --app background_tasks.celery worker --loglevel=info -c 1`
-
-**Please note that if the workload is large, the current hosted application may not perform optimally due to resource limitations. To keep costs low, the current instances may not be able to handle high workloads. In such cases, it is recommended to consider self-hosting the application.**
