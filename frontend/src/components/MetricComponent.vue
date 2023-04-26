@@ -125,13 +125,12 @@
 import BarChartContainer from "./ChartComponent.vue";
 
 export default {
-  name: "SubComponentContainer",
+  name: "MetricComponentContainer",
   components: { BarChartContainer },
   props: {
     chartData: { type: [Object, null], required: true },
     growthError: { type: String, required: true },
     growthProgress: { type: [Boolean, null], required: true },
-    imgSrc: { type: String, required: true },
     isAddRepo: { type: Boolean, required: true },
     heading: { type: String, required: true },
     title: { type: String, required: true },
@@ -146,6 +145,13 @@ export default {
       mutableIsAddRepo: this.isAddRepo,
     };
   },
+  computed: {
+    imgSrc: function () {
+      return this.mutableIsAddRepo
+        ? require("../assets/icons8-close.svg")
+        : require("../assets/icons8-plus-+.svg");
+    },
+  }
 };
 </script>
 

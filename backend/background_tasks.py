@@ -402,7 +402,7 @@ def issuegrowth(
     access_token: Optional[str] = None,
     timedelta: int = 7,
     timedelta_frequency: int = 2,
-    issue_stats: bool = False,
+    issue_overview: bool = False,
     state: str = "open",
 ):
     """
@@ -441,7 +441,7 @@ def issuegrowth(
 
     issue_map = None
     no_of_issues = 0
-    if issue_stats:
+    if issue_overview:
         no_of_issues = 50
         issue_map = {"addressed": [], "unaddressed": []}
         issues = response.json()

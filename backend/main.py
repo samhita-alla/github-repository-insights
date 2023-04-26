@@ -3,8 +3,8 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
-from worker import celery as celery_app
-from worker import contributorgrowth, issuegrowth, stargrowth
+from background_tasks import celery as celery_app
+from background_tasks import contributorgrowth, issuegrowth, stargrowth
 
 load_dotenv()
 
@@ -74,7 +74,7 @@ def open_issue_growth(
     github_api: str,
     timedelta: int = 7,
     timedelta_frequency: int = 2,
-    issue_stats: bool = False,
+    issue_overview: bool = False,
     authorization: str = Header(default=None),
 ):
     accesstoken = None
@@ -87,7 +87,7 @@ def open_issue_growth(
         access_token=accesstoken,
         timedelta=timedelta,
         timedelta_frequency=timedelta_frequency,
-        issue_stats=issue_stats,
+        issue_overview=issue_overview,
     )
     return JSONResponse({"task_id": task.id})
 
