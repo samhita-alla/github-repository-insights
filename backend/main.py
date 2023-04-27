@@ -1,10 +1,12 @@
+import os
+
+from background_tasks import celery as celery_app
+from background_tasks import contributorgrowth, issuegrowth, stargrowth
 from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
-from background_tasks import celery as celery_app
-from background_tasks import contributorgrowth, issuegrowth, stargrowth
 
 load_dotenv()
 
@@ -23,6 +25,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+authorization = f"Bearer {os.getenv('ACCESS_TOKEN')}"
 
 
 @app.get("/")
@@ -53,7 +57,7 @@ def star_growth(
     github_api: str,
     timedelta: int = 7,
     timedelta_frequency: int = 2,
-    authorization: str = Header(default=None),
+    authorization: str = Header(default=authorization),
 ):
     accesstoken = None
     if authorization:
@@ -75,7 +79,7 @@ def open_issue_growth(
     timedelta: int = 7,
     timedelta_frequency: int = 2,
     issue_overview: bool = False,
-    authorization: str = Header(default=None),
+    authorization: str = Header(default=authorization),
 ):
     accesstoken = None
     if authorization:
@@ -97,7 +101,7 @@ def closed_issue_growth(
     github_api: str,
     timedelta: int = 7,
     timedelta_frequency: int = 2,
-    authorization: str = Header(default=None),
+    authorization: str = Header(default=authorization),
 ):
     accesstoken = None
     if authorization:
@@ -119,7 +123,7 @@ def contributor_growth(
     github_api: str,
     timedelta: int = 7,
     timedelta_frequency: int = 2,
-    authorization: str = Header(default=None),
+    authorization: str = Header(default=authorization),
 ):
     accesstoken = None
     if authorization:

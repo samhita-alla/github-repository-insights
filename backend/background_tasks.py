@@ -10,6 +10,7 @@ import numpy as np
 import requests
 from celery import Celery, current_task
 from celery.signals import worker_process_init
+from kombu_fernet.serializers.json import MIMETYPE
 from requests.adapters import HTTPAdapter
 from requests.exceptions import (
     ConnectionError,
@@ -40,6 +41,10 @@ celery.conf.result_backend = os.environ.get(
     "CELERY_RESULT_BACKEND", "redis://localhost:6379"
 )
 celery.conf.worker_proc_alive_timeout = 60
+celery.conf.update(
+    task_serializer="fernet_json",
+    accept_content=[MIMETYPE, "json"],
+)
 
 
 def dialogue_act_features(post):

@@ -7,3 +7,4 @@ jinja2
 celery[redis]
 nltk
 importlib-metadata==4.13.0
+kombu-fernet-serializers

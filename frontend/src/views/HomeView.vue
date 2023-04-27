@@ -63,7 +63,7 @@
               </div>
               <p>
                 → Obtain your access token by visiting
-                <a href="https://github.com/settings/tokens/new">GitHub</a>. No
+                <a href="https://github.com/settings/tokens/new" target="_blank">GitHub</a>. No
                 scope is required.
               </p>
             </div>
@@ -84,7 +84,7 @@
         </p>
       </div>
       <!-- START FORM -->
-      <form @submit.prevent="submit" class="mb-5">
+      <form class="mb-5" @submit.prevent="submit">
         <div class="form-group mb-3">
           <label for="github-api">GitHub Repo</label>
           <input id="github-api" v-model="form.githubApi" type="text" class="form-control" placeholder="flyteorg/flyte"
