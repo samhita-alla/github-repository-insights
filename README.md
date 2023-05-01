@@ -33,6 +33,7 @@ Generate real-time GitHub insights for your open-source projects and stay inform
 - `nvm install 16`
 - Frontend: `cd frontend && npm install && npm run serve`
 - The frontend server will be served at http://localhost:8080
-- Backend: `cd backend && pip install -r requirements.txt && uvicorn main:app --reload`
+- Install requirements: `cd backend && pip install -r requirements.txt`
+- Backend: `cd backend && uvicorn main:app --reload`
 - The backend server will be served at http://localhost:8000
 - Background task: `cd backend && celery --app background_tasks.celery worker --loglevel=info -c 1`
